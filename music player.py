@@ -6,7 +6,7 @@ class MusicPlayer:
     def __init__(self,root):
         ##pallet colors
         self.root_bg = "gray20"
-        self.menu_bg = "Indian Red3"
+        self.menu_bg = "PaleVioletRed3"
         ## Root configuration // title, size, not resizable, initial background color
         
         self.root = root
@@ -20,13 +20,25 @@ class MusicPlayer:
         self.root.resizable(False, False)
 
         ##Load icons toggle
-        self.menu_icon = ImageTk.PhotoImage(Image.open("menuicons/menu_icon.png"))
-       
-        #self.home_icon = PhotoImage(file= "menuicons/home_icon.png")
+        menu_icon = Image.open("menuicons/menu_icon.png")
+        menu_icon = menu_icon.resize((60,60))
+        self.menu_icon = ImageTk.PhotoImage(menu_icon)
         
-        #self.playlist_icon = PhotoImage(file= "menuicons/create_playlist_icon.png")
+        close_icon = Image.open("menuicons/close_icon.png")
+        close_icon = close_icon.resize((60,60))
+        self.close_icon = ImageTk.PhotoImage(close_icon)
         
-        #self.add_icon = PhotoImage(file= "menuicons/addfromfile_icon.png")
+        home_icon = Image.open("menuicons/home_icon.png")
+        home_icon = home_icon.resize((60,60))
+        self.home_icon = ImageTk.PhotoImage(home_icon)
+        
+        playlist_icon = Image.open("menuicons/create_playlist_icon.png")
+        playlist_icon = playlist_icon.resize((60,60))
+        self.playlist_icon = ImageTk.PhotoImage(playlist_icon)
+        
+        add_icon = Image.open("menuicons/addfromfile_icon.png")
+        add_icon = add_icon.resize((60,60))
+        self.add_icon = ImageTk.PhotoImage(add_icon)
         
         ##Create sidebar frame
         
@@ -38,19 +50,120 @@ class MusicPlayer:
         
         self.menu_frame_bar.configure(width = 100)
         
-        ##Toggle buttons
+        ## Indicators Labels
         
-        toggle_menu = tk.Button(self.menu_frame_bar,
+        self.home_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
+        self.home_indicator.place(x=5, y=345, width=7, height=70)
+        
+        self.playlist_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
+        self.playlist_indicator.place(x=5, y=495, width=7, height=70)
+        
+        self.add_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
+        self.add_indicator.place(x=5, y=645, width=7, height=70)
+        
+        ##buttons
+        
+        self.menubtn = tk.Button(self.menu_frame_bar,
                                 image= self.menu_icon,
                                 command= self.toggle_menu,
-                                bg = "Indian Red3",
-                                activebackground = "Indian Red4",)
+                                bg = self.menu_bg,
+                                activebackground = self.menu_bg,
+                                bd =0)
         
-        toggle_menu.place(x=10, y=10)
+        self.menubtn.status = "closed"
+        
+        self.menubtn.place(x=15, y=15)
+        
+        self.toggle_home = tk.Button(self.menu_frame_bar,
+                                image= self.home_icon,
+                                command= lambda: self.switch_indicator(self.home_indicator),
+                                bg = self.menu_bg,
+                                activebackground = self.menu_bg,
+                                bd =0)
+        
+        self.toggle_home.place(x=15, y=350)
+        
+        self.toggle_playlist = tk.Button(self.menu_frame_bar,
+                                image= self.playlist_icon,
+                                command= lambda: self.switch_indicator(self.playlist_indicator),
+                                bg = self.menu_bg,
+                                activebackground = self.menu_bg,
+                                bd =0)
+        
+        self.toggle_playlist.place(x=15, y=500)
+        
+        self.toggle_add = tk.Button(self.menu_frame_bar,
+                                image= self.add_icon,
+                                command= lambda: self.switch_indicator(self.add_indicator),
+                                bg = self.menu_bg,
+                                activebackground = self.menu_bg,
+                                bd =0)
+        
+        self.toggle_add.place(x=15, y=650)
+    
+    ## Labels
+
+        self.home_lb = tk.Label(self.menu_frame_bar,font = ("Arial", 20, "bold"), text= "Home", bg = self.menu_bg, fg = "black")
+        
+        self.home_lb.bind("<Button-1>", lambda event: self.switch_indicator(self.home_indicator))
+        
+        self.playlist_lb = tk.Label(self.menu_frame_bar, font = ("Arial", 20, "bold"), text= "Create playlist", bg = self.menu_bg, fg = "black")
+        self.playlist_lb.bind("<Button-1>", lambda event: self.switch_indicator(self.playlist_indicator))
+        
+        self.add_lb = tk.Label(self.menu_frame_bar, font = ("Arial", 20, "bold"), text= "Add from file", bg = self.menu_bg, fg = "black")
+        self.add_lb.bind("<Button-1>", lambda event: self.switch_indicator(self.add_indicator))
+        
+        #lambda event pasa el evento como argumento aunque no se use o indique automaticamente
+        
+    def switch_indicator(self,indicator):
+        
+        self.home_indicator.configure(bg = self.menu_bg)
+        self.playlist_indicator.configure(bg = self.menu_bg)
+        self.add_indicator.configure(bg = self.menu_bg)
+        
+        indicator.configure(bg = "black")
+        
+        if self.menu_frame_bar.winfo_width() > 100:
+            self.toggle_menu_close()
+        
     
     def toggle_menu(self):
-        pass
-
+        self.animation_menu(opening = True)
+        self.show_labels()
+        self.menubtn.configure(image = self.close_icon, command = self.toggle_menu_close)
+    
+    def toggle_menu_close(self):
+        
+        self.animation_menu(opening = False)
+        self.hide_labels()
+        self.menubtn.configure(image = self.menu_icon, command = self.toggle_menu)
+    
+    def animation_menu(self, opening = False):
+        
+        current_width = self.menu_frame_bar.winfo_width()
+        
+        if opening:
+            if not current_width > 400:
+                current_width += 10
+                self.menu_frame_bar.configure(width = current_width)
+                self.root.after(5, func = lambda:self.animation_menu(opening= True))
+        else:
+            if current_width > 100:
+                current_width -= 10
+                self.menu_frame_bar.configure(width = current_width)
+                self.root.after(5, func= lambda: self.animation_menu(opening=False))
+                
+    def show_labels(self):
+        self.home_lb.place(x=90, y=370)
+        self.playlist_lb.place(x=90, y=515)
+        self.add_lb.place(x=90, y=665)
+        
+    def hide_labels(self):
+        self.home_lb.place_forget()
+        self.playlist_lb.place_forget()
+        self.add_lb.place_forget()
+        
+        
 root = tk.Tk()
 MusicPlayer(root)
 root.mainloop()
