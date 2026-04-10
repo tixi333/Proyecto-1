@@ -2,6 +2,7 @@ from tkinter import *
 import tkinter as tk
 from PIL import Image, ImageTk
 
+##Tkinterdnd - filedialog.askopenfilename()
 class MusicPlayer:
     def __init__(self,root):
         ##pallet colors
@@ -60,8 +61,18 @@ class MusicPlayer:
         
         self.add_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
         self.add_indicator.place(x=5, y=645, width=7, height=70)
+        ## Frames
         
-        ##buttons
+        self.home_frame = tk.Frame(self.root, bg = self.root_bg)
+        #self.home_frame.pack(fill = tk.BOTH, expand = True)
+        
+        self.playlist_frame = tk.Frame(self.root, bg = self.root_bg)
+        #self.playlist_frame.pack(fill = tk.BOTH, expand = True)
+        
+        self.add_frame = tk.Frame(self.root, bg = self.root_bg)
+        #self.add_frame.pack(fill = tk.BOTH, expand = True)
+        
+        ##Buttons
         
         self.menubtn = tk.Button(self.menu_frame_bar,
                                 image= self.menu_icon,
@@ -76,7 +87,7 @@ class MusicPlayer:
         
         self.toggle_home = tk.Button(self.menu_frame_bar,
                                 image= self.home_icon,
-                                command= lambda: self.switch_indicator(self.home_indicator),
+                                command= lambda: [self.switch_indicator(self.home_indicator), self.home_screen()],
                                 bg = self.menu_bg,
                                 activebackground = self.menu_bg,
                                 bd =0)
@@ -85,7 +96,7 @@ class MusicPlayer:
         
         self.toggle_playlist = tk.Button(self.menu_frame_bar,
                                 image= self.playlist_icon,
-                                command= lambda: self.switch_indicator(self.playlist_indicator),
+                                command= lambda: [self.switch_indicator(self.playlist_indicator), self._create_playlist_screen()],
                                 bg = self.menu_bg,
                                 activebackground = self.menu_bg,
                                 bd =0)
@@ -94,7 +105,7 @@ class MusicPlayer:
         
         self.toggle_add = tk.Button(self.menu_frame_bar,
                                 image= self.add_icon,
-                                command= lambda: self.switch_indicator(self.add_indicator),
+                                command= lambda: [self.switch_indicator(self.add_indicator), self.load_screen()],
                                 bg = self.menu_bg,
                                 activebackground = self.menu_bg,
                                 bd =0)
@@ -163,6 +174,14 @@ class MusicPlayer:
         self.playlist_lb.place_forget()
         self.add_lb.place_forget()
         
+    def home_screen(self):
+        pass
+    
+    def _create_playlist_screen(self):
+        pass
+    
+    def load_screen(self):
+        pass
         
 root = tk.Tk()
 MusicPlayer(root)
