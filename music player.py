@@ -13,13 +13,18 @@ class MusicPlayer:
         self.root = root
         self.root.title("Music Player")
         
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
+        #screen_width = self.root.winfo_screenwidth()
+        #screen_height = self.root.winfo_screenheight()
         
-        self.root.geometry(f"{screen_width}x{screen_height}")
-        self.root.configure(bg = self.root_bg)
-        self.root.resizable(False, False)
+        #self.root.geometry(f"{screen_width}x{screen_height}")
+        #self.root.configure(bg = self.root_bg)
+        #self.root.resizable(False, False)
 
+        self.root.state("zoomed")  # mejor que geometry full screen
+        self.root.configure(bg=self.root_bg)
+
+        self.root.minsize(800, 600)
+        
         ##Load icons toggle
         menu_icon = Image.open("menuicons/menu_icon.png")
         menu_icon = menu_icon.resize((60,60))
@@ -87,7 +92,7 @@ class MusicPlayer:
         
         self.toggle_home = tk.Button(self.menu_frame_bar,
                                 image= self.home_icon,
-                                command= lambda: [self.switch_indicator(self.home_indicator), self.home_screen()],
+                                command= lambda: [self.switch_indicator(indicator= self.home_indicator, page= self.home_screen)],
                                 bg = self.menu_bg,
                                 activebackground = self.menu_bg,
                                 bd =0)
@@ -96,7 +101,7 @@ class MusicPlayer:
         
         self.toggle_playlist = tk.Button(self.menu_frame_bar,
                                 image= self.playlist_icon,
-                                command= lambda: [self.switch_indicator(self.playlist_indicator), self._create_playlist_screen()],
+                                command= lambda: [self.switch_indicator(indicator= self.playlist_indicator, page= self.create_playlist_screen)],
                                 bg = self.menu_bg,
                                 activebackground = self.menu_bg,
                                 bd =0)
@@ -105,7 +110,7 @@ class MusicPlayer:
         
         self.toggle_add = tk.Button(self.menu_frame_bar,
                                 image= self.add_icon,
-                                command= lambda: [self.switch_indicator(self.add_indicator), self.load_screen()],
+                                command= lambda: [self.switch_indicator(indicator= self.add_indicator, page= self.load_screen)],
                                 bg = self.menu_bg,
                                 activebackground = self.menu_bg,
                                 bd =0)
@@ -116,17 +121,26 @@ class MusicPlayer:
 
         self.home_lb = tk.Label(self.menu_frame_bar,font = ("Arial", 20, "bold"), text= "Home", bg = self.menu_bg, fg = "black")
         
-        self.home_lb.bind("<Button-1>", lambda event: self.switch_indicator(self.home_indicator))
+        self.home_lb.bind("<Button-1>", lambda event: self.switch_indicator(indicator= self.home_indicator,
+                                                                            page= self.home_screen))
         
         self.playlist_lb = tk.Label(self.menu_frame_bar, font = ("Arial", 20, "bold"), text= "Create playlist", bg = self.menu_bg, fg = "black")
-        self.playlist_lb.bind("<Button-1>", lambda event: self.switch_indicator(self.playlist_indicator))
+        self.playlist_lb.bind("<Button-1>", lambda event: self.switch_indicator(indicator= self.playlist_indicator,
+                                                                                page= self.create_playlist_screen))
         
         self.add_lb = tk.Label(self.menu_frame_bar, font = ("Arial", 20, "bold"), text= "Add from file", bg = self.menu_bg, fg = "black")
-        self.add_lb.bind("<Button-1>", lambda event: self.switch_indicator(self.add_indicator))
+        self.add_lb.bind("<Button-1>", lambda event: self.switch_indicator(indicator= self.add_indicator, 
+                                                                           page= self.load_screen))
         
         #lambda event pasa el evento como argumento aunque no se use o indique automaticamente
+        ### Page frame
+    
+        self.page_frame = tk.Frame(self.root, bg = self.root_bg)
+        self.page_frame.pack(fill = tk.BOTH, expand = True)
         
-    def switch_indicator(self,indicator):
+        self.home_screen()
+    
+    def switch_indicator(self,indicator, page):
         
         self.home_indicator.configure(bg = self.menu_bg)
         self.playlist_indicator.configure(bg = self.menu_bg)
@@ -136,7 +150,11 @@ class MusicPlayer:
         
         if self.menu_frame_bar.winfo_width() > 100:
             self.toggle_menu_close()
+            
+        for frame in self.page_frame.winfo_children():
+            frame.destroy()
         
+        page()
     
     def toggle_menu(self):
         self.animation_menu(opening = True)
@@ -173,15 +191,37 @@ class MusicPlayer:
         self.home_lb.place_forget()
         self.playlist_lb.place_forget()
         self.add_lb.place_forget()
-        
-    def home_screen(self):
+
+    def manage_pages(self, page):
         pass
     
-    def _create_playlist_screen(self):
-        pass
+    def home_screen(self):
+        
+        
+        screen_page = tk.Frame(self.page_frame, bg =self.root_bg)
+        
+        lb_provisorio = tk.Label(screen_page, text = "Home Screen", font = ("Arial", 30, "bold"), bg = self.root_bg, fg = "white")
+        lb_provisorio.pack(pady= 20)
+        
+        screen_page.pack(fill = tk.BOTH, expand = True)
+    
+    def create_playlist_screen(self):
+        
+        playlist_page = tk.Frame(self.page_frame, bg = self.root_bg)
+        
+        lb_provisorio = tk.Label(playlist_page, text = "Create playlist Screen", font = ("Arial", 30, "bold"), bg = self.root_bg, fg = "white")
+        lb_provisorio.pack(pady= 20)
+        
+        playlist_page.pack(fill = tk.BOTH, expand = True)
     
     def load_screen(self):
-        pass
+        
+        load_page = tk.Frame(self.page_frame, bg = self.root_bg)
+        
+        lb_provisorio = tk.Label(load_page, text = "Add from file Screen", font = ("Arial", 30, "bold"), bg = self.root_bg, fg = "white")
+        lb_provisorio.pack(pady= 20)
+        
+        load_page.pack(fill = tk.BOTH, expand = True)
         
 root = tk.Tk()
 MusicPlayer(root)
