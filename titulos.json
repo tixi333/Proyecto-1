@@ -1,8 +1,25 @@
 {
     "songs": [
         {
-            "path": "music\\TAICHU - LOS ANGELES (Video Oficial).mp3",
-            "name": "TAICHU - LOS ANGELES (Video Oficial).mp3"
+            "path": "music\\Kevin MacLeod - Monkeys Spinning Monkeys.mp3",
+            "name": "Kevin MacLeod - Monkeys Spinning Monkeys.mp3",
+            "title": "Monkeys Spinning Monkeys",
+            "artist": "Kevin MacLeod",
+            "album": "Best of 2014"
+        },
+        {
+            "path": "music\\Kevin MacLeod - Unity.mp3",
+            "name": "Kevin MacLeod - Unity.mp3",
+            "title": "Unity",
+            "artist": "Kevin MacLeod",
+            "album": "Best of 2014"
+        },
+        {
+            "path": "music\\Kevin MacLeod - Early Riser.mp3",
+            "name": "Kevin MacLeod - Early Riser.mp3",
+            "title": "Early Riser",
+            "artist": "Kevin MacLeod",
+            "album": "Best of 2014"
         }
     ]
 }

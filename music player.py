@@ -1,20 +1,20 @@
 import shutil
 from tkinter import *
 import tkinter as tk
+from tkinter import ttk
 from PIL import Image, ImageTk
 from tkinter import filedialog
 import tkinterdnd2 as tkdnd
 import json, os
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3
+from mutagen.easyid3 import EasyID3
 
 ## 1
 ## add from file screen : + input artist, title, album, load cover manually
-##                        + mutagen for metadata (artist, title, album) and cover
+##                        + tinytag/mutagen for metadata (artist, title, album) and cover
 ## 2 interfaz
 ## add loaded songs at home screen
 ## 3 barra de progreso, play, pause, stop, next, previous
-                          
+
 ##Tkinterdnd - filedialog.askopenfilename()
 class MusicPlayer:
     def __init__(self,root):
@@ -23,6 +23,7 @@ class MusicPlayer:
         ##pallet colors
         self.root_bg = "gray20"
         self.menu_bg = "PaleVioletRed3"
+        self.tree_bg = "grey15"
         ## Root configuration // title, size, not resizable, initial background color
         
         self.root = root
@@ -35,7 +36,7 @@ class MusicPlayer:
         #self.root.configure(bg = self.root_bg)
         #self.root.resizable(False, False)
 
-        self.root.state("zoomed")  
+        self.root.state("zoomed")
         self.root.configure(bg=self.root_bg)
 
         self.root.minsize(800, 600)
@@ -80,9 +81,9 @@ class MusicPlayer:
         self.menu_frame_bar.pack(side = tk.LEFT, fill = tk.Y , pady= 10, padx= 10)
         self.menu_frame_bar.pack_propagate(0)
         
-        self.home_indicator = self.create_indicators(345)
-        self.playlist_indicator = self.create_indicators(495)
-        self.add_indicator = self.create_indicators(645)
+        self.home_indicator = self.create_indicators(200)
+        self.playlist_indicator = self.create_indicators(350)
+        self.add_indicator = self.create_indicators(500)
         
         self.menubtn = tk.Button(self.menu_frame_bar,
                                 image= self.menu_icon,
@@ -92,21 +93,20 @@ class MusicPlayer:
                                 bd =0)
         
         self.menubtn.status = "closed"
-        self.menubtn.place(x=15, y=15)
-        
+        self.menubtn.place(x = 15 , y = 15 )
         self.toggle_home = self.create_buttons(img = self.home_icon,
                                                cmd = lambda: self.switch_pages("home", self.home_indicator),
-                                               y= 350)
+                                               y= 200)
         self.toggle_playlist = self.create_buttons(img = self.playlist_icon,
                                                    cmd = lambda: self.switch_pages("playlist", self.playlist_indicator),
-                                                   y= 500)
+                                                   y= 350)
         self.toggle_add = self.create_buttons(img = self.add_icon,
                                               cmd = lambda: self.switch_pages("load", self.add_indicator),
-                                              y= 650)
+                                              y= 500)
         
-        self.home_lb = self.create_label("Home", 370, self.home_indicator, "home")
-        self.playlist_lb = self.create_label("Create playlist", 515, self.playlist_indicator, "playlist")
-        self.add_lb = self.create_label("Add from file", 665, self.add_indicator, "load")
+        self.home_lb = self.create_label("Home", 100, self.home_indicator, "home")
+        self.playlist_lb = self.create_label("Create playlist", 350, self.playlist_indicator, "playlist")
+        self.add_lb = self.create_label("Add from file", 500, self.add_indicator, "load")
     
     def create_label(self, text,y, indicator, page):
         lb = tk.Label(self.menu_frame_bar,
@@ -114,6 +114,7 @@ class MusicPlayer:
                       text= text,
                       bg = self.menu_bg,
                       fg = "black")
+        
         lb.bind("<Button-1>", lambda event: self.switch_pages(page, indicator))
         
         return lb
@@ -126,7 +127,7 @@ class MusicPlayer:
                         activebackground = self.menu_bg,
                         bd =0)
         
-        btn.place(x=15, y=y)
+        btn.place(x= 15, y= y)
         return btn
     
     def create_indicators(self, y):
@@ -178,9 +179,9 @@ class MusicPlayer:
                 self.root.after(5, func= lambda: self.animation_menu(opening=False))
                 
     def show_labels(self):
-        self.home_lb.place(x=90, y=370)
-        self.playlist_lb.place(x=90, y=515)
-        self.add_lb.place(x=90, y=665)
+        self.home_lb.place(x=90, y=220)
+        self.playlist_lb.place(x=90, y=370)
+        self.add_lb.place(x=90, y=520)
         
     def hide_labels(self):
         self.home_lb.place_forget()
@@ -213,13 +214,28 @@ class MusicPlayer:
 
         tk.Label(
             frame,
-            text="Home Screen",
+            text="Inicio",
             font=("Arial", 30, "bold"),
             bg=self.root_bg,
             fg="white"
         ).pack(pady=20)
 
+        self.tree_frame = tk.Frame(frame, bg = self.tree_bg, width= 400, height=400)
+        self.tree_frame.pack(side = LEFT, fill = tk.Y, pady= 20, padx= 20)
+        self.tree_frame.pack_propagate(False)
+
+        columns = ["Path", "Title", "Artist", "Album"]
+        self.tree = ttk.Treeview(self.tree_frame, columns = ("Path", "Title", "Artist", "Album"))
+        
+        for col in columns:
+            self.tree.heading(col, text=col)
+        self.tree.column('#0', width=0, stretch='no')
+        self.tree.pack(side = LEFT,fill= tk.BOTH, ipadx= 10, ipady=10)
+        
         return frame
+
+    def load_info_tree():
+        pass
     
     def create_playlist_screen(self):
     
@@ -227,7 +243,7 @@ class MusicPlayer:
 
         tk.Label(
             frame,
-            text="Create Playlist Screen",
+            text="Crear Playlist",
             font=("Arial", 30, "bold"),
             bg=self.root_bg,
             fg="white"
@@ -241,7 +257,7 @@ class MusicPlayer:
 
         tk.Label(
             frame,
-            text="Add From File Screen",
+            text="Anadir desde archivos",
             font=("Arial", 30, "bold"),
             bg=self.root_bg,
             fg="white"
@@ -296,16 +312,15 @@ class MusicPlayer:
     
     
     def load_file(self):
-        print("load file")
-       
         file_path = filedialog.askopenfilename(
         filetypes=[("Audio Files", "*.mp3 *.wav")]
         )
+        print(file_path)
 
         if file_path:
             self.add_song(file_path)
 
-    def add_song(self, file_path):
+    def add_song(self,file_path):
         
         music_folder = "music"
         os.makedirs(music_folder, exist_ok=True)
@@ -313,16 +328,23 @@ class MusicPlayer:
         filename = os.path.basename(file_path)
         destination = os.path.join(music_folder, filename)
 
+        print(destination)
+
+
         # copia el archivo a la carpeta solo si no existe
         if not os.path.exists(destination):
             shutil.copy(file_path, destination)
 
-        data = self.load_songs()
-
         
+        title, artist, album = self.get_song_info(destination)
+
+        data = self.load_songs()
         song = {
             "path": destination,
-            "name": filename
+            "name": filename,
+            "title" : title,
+            "artist": artist,
+            "album" : album
         }
 
         if song not in data["songs"]:
@@ -343,10 +365,16 @@ class MusicPlayer:
         with open(self.json, "w") as f:
             json.dump(data, f, indent=4)
             
-    def get_song_info(self):
-        pass
+    def get_song_info(self,destination):
+
+        audio = EasyID3(destination)
+
+        title = (audio.get("title",['Unknown'])[0])
+        artist = audio.get("artist", ['Unknown'])[0]
+        album = audio.get("album", ['Unknown'])[0]
         
-    
+        return title,artist,album
+
 root = tkdnd.Tk()
 MusicPlayer(root)
 root.mainloop()
