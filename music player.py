@@ -220,6 +220,7 @@ class MusicPlayer:
             fg="white"
         ).pack(pady=20)
 
+        self.load_info_tree()
         self.tree_frame = tk.Frame(frame, bg = self.tree_bg, width= 400, height=400)
         self.tree_frame.pack(side = LEFT, fill = tk.Y, pady= 20, padx= 20)
         self.tree_frame.pack_propagate(False)
@@ -234,9 +235,20 @@ class MusicPlayer:
         
         return frame
 
-    def load_info_tree():
-        pass
-    
+    def load_info_tree(self):
+        try:
+            with open("titulos.json","r") as file:
+                self.datos = json.load(file)
+
+                print(len(self.datos["songs"]))
+
+                for e in range(len(self.datos["songs"])):
+                    path = (self.datos["songs"][e]["path"])
+                    name = (self.datos["songs"][e]["name"])
+                    
+        except FileNotFoundError:
+            self.datos = {}
+
     def create_playlist_screen(self):
     
         frame = tk.Frame(self.page_frame, bg=self.root_bg)
