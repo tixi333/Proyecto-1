@@ -1,10 +1,25 @@
+import shutil
 from tkinter import *
 import tkinter as tk
 from PIL import Image, ImageTk
+from tkinter import filedialog
+import tkinterdnd2 as tkdnd
+import json, os
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3
 
+## 1
+## add from file screen : + input artist, title, album, load cover manually
+##                        + mutagen for metadata (artist, title, album) and cover
+## 2 interfaz
+## add loaded songs at home screen
+## 3 barra de progreso, play, pause, stop, next, previous
+                          
 ##Tkinterdnd - filedialog.askopenfilename()
 class MusicPlayer:
     def __init__(self,root):
+        
+        #--------------------------------------------------------CONFIGURACION INICIAL--------------------------------------------------------
         ##pallet colors
         self.root_bg = "gray20"
         self.menu_bg = "PaleVioletRed3"
@@ -20,64 +35,54 @@ class MusicPlayer:
         #self.root.configure(bg = self.root_bg)
         #self.root.resizable(False, False)
 
-        self.root.state("zoomed")  # mejor que geometry full screen
+        self.root.state("zoomed")  
         self.root.configure(bg=self.root_bg)
 
         self.root.minsize(800, 600)
         
-        ##Load icons toggle
-        menu_icon = Image.open("menuicons/menu_icon.png")
-        menu_icon = menu_icon.resize((60,60))
-        self.menu_icon = ImageTk.PhotoImage(menu_icon)
+        # --------------------- INTERFACE FUNCTIONS ---------------------
         
-        close_icon = Image.open("menuicons/close_icon.png")
-        close_icon = close_icon.resize((60,60))
-        self.close_icon = ImageTk.PhotoImage(close_icon)
+        self.current_page = None
+        self.json = "titulos.json"
         
-        home_icon = Image.open("menuicons/home_icon.png")
-        home_icon = home_icon.resize((60,60))
-        self.home_icon = ImageTk.PhotoImage(home_icon)
+        self.load_json()
+        self.load_icons()
         
-        playlist_icon = Image.open("menuicons/create_playlist_icon.png")
-        playlist_icon = playlist_icon.resize((60,60))
-        self.playlist_icon = ImageTk.PhotoImage(playlist_icon)
+        self.create_sidebar()
         
-        add_icon = Image.open("menuicons/addfromfile_icon.png")
-        add_icon = add_icon.resize((60,60))
-        self.add_icon = ImageTk.PhotoImage(add_icon)
+        self.page_frame = tk.Frame(self.root, bg = self.root_bg)
+        self.page_frame.pack(fill = tk.BOTH, expand = True)
         
-        ##Create sidebar frame
+        self.screens = {
+            "home": self.create_home_screen(),
+            "playlist": self.create_playlist_screen(),
+            "load": self.create_load_screen()
+        }
         
-        self.menu_frame_bar = tk.Frame(self.root, bg = self.menu_bg)
         
+        self.switch_pages("home", self.home_indicator)
+        #lambda event pasa el evento como argumento aunque no se use o indique automaticamente
+        
+        
+    def load_icons(self):
+        def load(path):
+            img = Image.open(path).resize((60, 60))
+            return ImageTk.PhotoImage(img)
+
+        self.menu_icon = load("menuicons/menu_icon.png")
+        self.close_icon = load("menuicons/close_icon.png")
+        self.home_icon = load("menuicons/home_icon.png")
+        self.playlist_icon = load("menuicons/create_playlist_icon.png")
+        self.add_icon = load("menuicons/addfromfile_icon.png")
+
+    def create_sidebar(self):
+        self.menu_frame_bar = tk.Frame(self.root, bg = self.menu_bg, width=100)
         self.menu_frame_bar.pack(side = tk.LEFT, fill = tk.Y , pady= 10, padx= 10)
-        
         self.menu_frame_bar.pack_propagate(0)
         
-        self.menu_frame_bar.configure(width = 100)
-        
-        ## Indicators Labels
-        
-        self.home_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
-        self.home_indicator.place(x=5, y=345, width=7, height=70)
-        
-        self.playlist_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
-        self.playlist_indicator.place(x=5, y=495, width=7, height=70)
-        
-        self.add_indicator = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
-        self.add_indicator.place(x=5, y=645, width=7, height=70)
-        ## Frames
-        
-        self.home_frame = tk.Frame(self.root, bg = self.root_bg)
-        #self.home_frame.pack(fill = tk.BOTH, expand = True)
-        
-        self.playlist_frame = tk.Frame(self.root, bg = self.root_bg)
-        #self.playlist_frame.pack(fill = tk.BOTH, expand = True)
-        
-        self.add_frame = tk.Frame(self.root, bg = self.root_bg)
-        #self.add_frame.pack(fill = tk.BOTH, expand = True)
-        
-        ##Buttons
+        self.home_indicator = self.create_indicators(345)
+        self.playlist_indicator = self.create_indicators(495)
+        self.add_indicator = self.create_indicators(645)
         
         self.menubtn = tk.Button(self.menu_frame_bar,
                                 image= self.menu_icon,
@@ -87,59 +92,49 @@ class MusicPlayer:
                                 bd =0)
         
         self.menubtn.status = "closed"
-        
         self.menubtn.place(x=15, y=15)
         
-        self.toggle_home = tk.Button(self.menu_frame_bar,
-                                image= self.home_icon,
-                                command= lambda: [self.switch_indicator(indicator= self.home_indicator, page= self.home_screen)],
-                                bg = self.menu_bg,
-                                activebackground = self.menu_bg,
-                                bd =0)
+        self.toggle_home = self.create_buttons(img = self.home_icon,
+                                               cmd = lambda: self.switch_pages("home", self.home_indicator),
+                                               y= 350)
+        self.toggle_playlist = self.create_buttons(img = self.playlist_icon,
+                                                   cmd = lambda: self.switch_pages("playlist", self.playlist_indicator),
+                                                   y= 500)
+        self.toggle_add = self.create_buttons(img = self.add_icon,
+                                              cmd = lambda: self.switch_pages("load", self.add_indicator),
+                                              y= 650)
         
-        self.toggle_home.place(x=15, y=350)
-        
-        self.toggle_playlist = tk.Button(self.menu_frame_bar,
-                                image= self.playlist_icon,
-                                command= lambda: [self.switch_indicator(indicator= self.playlist_indicator, page= self.create_playlist_screen)],
-                                bg = self.menu_bg,
-                                activebackground = self.menu_bg,
-                                bd =0)
-        
-        self.toggle_playlist.place(x=15, y=500)
-        
-        self.toggle_add = tk.Button(self.menu_frame_bar,
-                                image= self.add_icon,
-                                command= lambda: [self.switch_indicator(indicator= self.add_indicator, page= self.load_screen)],
-                                bg = self.menu_bg,
-                                activebackground = self.menu_bg,
-                                bd =0)
-        
-        self.toggle_add.place(x=15, y=650)
+        self.home_lb = self.create_label("Home", 370, self.home_indicator, "home")
+        self.playlist_lb = self.create_label("Create playlist", 515, self.playlist_indicator, "playlist")
+        self.add_lb = self.create_label("Add from file", 665, self.add_indicator, "load")
     
-    ## Labels
-
-        self.home_lb = tk.Label(self.menu_frame_bar,font = ("Arial", 20, "bold"), text= "Home", bg = self.menu_bg, fg = "black")
+    def create_label(self, text,y, indicator, page):
+        lb = tk.Label(self.menu_frame_bar,
+                      font = ("Arial", 20, "bold"),
+                      text= text,
+                      bg = self.menu_bg,
+                      fg = "black")
+        lb.bind("<Button-1>", lambda event: self.switch_pages(page, indicator))
         
-        self.home_lb.bind("<Button-1>", lambda event: self.switch_indicator(indicator= self.home_indicator,
-                                                                            page= self.home_screen))
-        
-        self.playlist_lb = tk.Label(self.menu_frame_bar, font = ("Arial", 20, "bold"), text= "Create playlist", bg = self.menu_bg, fg = "black")
-        self.playlist_lb.bind("<Button-1>", lambda event: self.switch_indicator(indicator= self.playlist_indicator,
-                                                                                page= self.create_playlist_screen))
-        
-        self.add_lb = tk.Label(self.menu_frame_bar, font = ("Arial", 20, "bold"), text= "Add from file", bg = self.menu_bg, fg = "black")
-        self.add_lb.bind("<Button-1>", lambda event: self.switch_indicator(indicator= self.add_indicator, 
-                                                                           page= self.load_screen))
-        
-        #lambda event pasa el evento como argumento aunque no se use o indique automaticamente
-        ### Page frame
+        return lb
     
-        self.page_frame = tk.Frame(self.root, bg = self.root_bg)
-        self.page_frame.pack(fill = tk.BOTH, expand = True)
+    def create_buttons(self, img,cmd,y):
+        btn = tk.Button(self.menu_frame_bar,
+                        image= img,
+                        command= cmd,
+                        bg = self.menu_bg,
+                        activebackground = self.menu_bg,
+                        bd =0)
         
-        self.home_screen()
+        btn.place(x=15, y=y)
+        return btn
     
+    def create_indicators(self, y):
+        ind = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
+        ind.place(x=5, y=y, width=7, height=70)
+        
+        return ind
+        
     def switch_indicator(self,indicator, page):
         
         self.home_indicator.configure(bg = self.menu_bg)
@@ -192,40 +187,166 @@ class MusicPlayer:
         self.playlist_lb.place_forget()
         self.add_lb.place_forget()
 
-    def manage_pages(self, page):
-        pass
+    def reset_indicators(self):
+        for indicator in [self.home_indicator, self.playlist_indicator, self.add_indicator]:
+            indicator.configure(bg = self.menu_bg)
+            
+    def switch_pages(self, page, indicator):
+        self.reset_indicators()
+        indicator.configure(bg = "black")
+        
+        if self.menu_frame_bar.winfo_width() > 100:
+            self.toggle_menu_close()
+
+        self.show_page(page)
     
-    def home_screen(self):
-        
-        
-        screen_page = tk.Frame(self.page_frame, bg =self.root_bg)
-        
-        lb_provisorio = tk.Label(screen_page, text = "Home Screen", font = ("Arial", 30, "bold"), bg = self.root_bg, fg = "white")
-        lb_provisorio.pack(pady= 20)
-        
-        screen_page.pack(fill = tk.BOTH, expand = True)
+    def show_page(self, page):
+        for w in self.page_frame.winfo_children():
+            w.pack_forget()
+
+        self.screens[page].pack(fill=tk.BOTH, expand=True)
+        self.current_page = page
+    
+    def create_home_screen(self):
+    
+        frame = tk.Frame(self.page_frame, bg=self.root_bg)
+
+        tk.Label(
+            frame,
+            text="Home Screen",
+            font=("Arial", 30, "bold"),
+            bg=self.root_bg,
+            fg="white"
+        ).pack(pady=20)
+
+        return frame
     
     def create_playlist_screen(self):
-        
-        playlist_page = tk.Frame(self.page_frame, bg = self.root_bg)
-        
-        lb_provisorio = tk.Label(playlist_page, text = "Create playlist Screen", font = ("Arial", 30, "bold"), bg = self.root_bg, fg = "white")
-        lb_provisorio.pack(pady= 20)
-        
-        playlist_page.pack(fill = tk.BOTH, expand = True)
     
-    def load_screen(self):
+        frame = tk.Frame(self.page_frame, bg=self.root_bg)
+
+        tk.Label(
+            frame,
+            text="Create Playlist Screen",
+            font=("Arial", 30, "bold"),
+            bg=self.root_bg,
+            fg="white"
+        ).pack(pady=20)
+
+        return frame
+    
+    def create_load_screen(self):
+    
+        frame = tk.Frame(self.page_frame, bg=self.root_bg)
+
+        tk.Label(
+            frame,
+            text="Add From File Screen",
+            font=("Arial", 30, "bold"),
+            bg=self.root_bg,
+            fg="white"
+        ).pack(pady=20)
+
+        tk.Label(
+        frame,
+        text="Cargá el archivo desde:",
+        font=("Arial", 14),
+        bg=self.root_bg,
+        fg="white"
+        ).pack(pady=10)
         
-        load_page = tk.Frame(self.page_frame, bg = self.root_bg)
+        tk.Button(
+        frame,
+        text="Abrir desde archivos",
+        command=self.load_file
+        ).pack(pady=10)
+
+        tk.Label(
+            frame, 
+            text= "Arrastrá y soltá tu canción aquí",
+            font=("Arial", 14),
+            bg=self.root_bg,
+            fg = "white"
+        ). pack(pady =10, padx=0)
         
-        lb_provisorio = tk.Label(load_page, text = "Add from file Screen", font = ("Arial", 30, "bold"), bg = self.root_bg, fg = "white")
-        lb_provisorio.pack(pady= 20)
+        drop_frame = tk.Frame(frame, bg="gray30", width=800, height=400)
+        drop_frame.pack(pady=20)
+        drop_frame.pack_propagate(False)
+
+        # Define el frame que debe aceptar archivos para el drag and drop.
+        drop_frame.drop_target_register(tkdnd.DND_FILES)
         
-        load_page.pack(fill = tk.BOTH, expand = True)
+        drop_frame.dnd_bind("<<Drop>>", self.handle_drop)
+
+        return frame
+    
+    def handle_drop(self, event):
+        # event.data = la ruta del archivo arrastrado 
+        # splitlist() convierte el formato para q sea legible 
+        files = self.root.tk.splitlist(event.data)
+
+        for file_path in files:
+            # normaliza la ruta 
+            normalized_path = os.path.normpath(file_path)
+
+            if normalized_path.lower().endswith((".mp3", ".wav")):
+                self.add_song(normalized_path)
+            else:
+                print(f"Formato no soportado: {normalized_path}")
+    
+    
+    def load_file(self):
+        print("load file")
+       
+        file_path = filedialog.askopenfilename(
+        filetypes=[("Audio Files", "*.mp3 *.wav")]
+        )
+
+        if file_path:
+            self.add_song(file_path)
+
+    def add_song(self, file_path):
         
-root = tk.Tk()
+        music_folder = "music"
+        os.makedirs(music_folder, exist_ok=True)
+
+        filename = os.path.basename(file_path)
+        destination = os.path.join(music_folder, filename)
+
+        # copia el archivo a la carpeta solo si no existe
+        if not os.path.exists(destination):
+            shutil.copy(file_path, destination)
+
+        data = self.load_songs()
+
+        
+        song = {
+            "path": destination,
+            "name": filename
+        }
+
+        if song not in data["songs"]:
+            data["songs"].append(song)
+            self.save_songs(data)
+        
+    def load_json(self):
+        if not os.path.exists(self.json):
+            with open(self.json, "w") as f:
+                json.dump({"songs": []}, f)
+            
+    def load_songs(self):
+        
+        with open(self.json, "r") as f:
+            return json.load(f)
+    
+    def save_songs(self, data):
+        with open(self.json, "w") as f:
+            json.dump(data, f, indent=4)
+            
+    def get_song_info(self):
+        pass
+        
+    
+root = tkdnd.Tk()
 MusicPlayer(root)
 root.mainloop()
-
-
-
