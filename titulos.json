@@ -20,6 +20,55 @@
             "title": "Early Riser",
             "artist": "Kevin MacLeod",
             "album": "Best of 2014"
+        },
+        {
+            "path": "music\\WEAPON - TAICHU (128k).mp3",
+            "name": "WEAPON - TAICHU (128k).mp3",
+            "title": "WEAPON",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        },
+        {
+            "path": "music\\VICIOS EN VICE CITY - TAICHU (128k).mp3",
+            "name": "VICIOS EN VICE CITY - TAICHU (128k).mp3",
+            "title": "VICIOS EN VICE CITY",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        },
+        {
+            "path": "music\\TAICHU - LOS ANGELES (Video Oficial).mp3",
+            "name": "TAICHU - LOS ANGELES (Video Oficial).mp3",
+            "title": "LOS ANGELES",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        },
+        {
+            "path": "music\\POV.mp3",
+            "name": "POV.mp3",
+            "title": "POV",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        },
+        {
+            "path": "music\\FREAK MATCH - TAICHU (128k).mp3",
+            "name": "FREAK MATCH - TAICHU (128k).mp3",
+            "title": "FREAK MATCH",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        },
+        {
+            "path": "music\\FANTASTIC TRACK.mp3",
+            "name": "FANTASTIC TRACK.mp3",
+            "title": "FANTASTIC TRACK",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        },
+        {
+            "path": "music\\DND ESTAS - TAICHU (128k).mp3",
+            "name": "DND ESTAS - TAICHU (128k).mp3",
+            "title": "DND ESTAS",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
         }
     ]
 }

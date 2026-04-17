@@ -7,6 +7,8 @@ from tkinter import filedialog
 import tkinterdnd2 as tkdnd
 import json, os
 from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3
+from io import BytesIO
 
 ## 1
 ## add from file screen : + input artist, title, album, load cover manually
@@ -21,30 +23,42 @@ class MusicPlayer:
         
         #--------------------------------------------------------CONFIGURACION INICIAL--------------------------------------------------------
         ##pallet colors
-        self.root_bg = "gray20"
+        self.root_bg = "black"
         self.menu_bg = "PaleVioletRed3"
-        self.tree_bg = "grey15"
+        self.tree_bg = "black"
         ## Root configuration // title, size, not resizable, initial background color
         
         self.root = root
         self.root.title("Music Player")
-        
-        #screen_width = self.root.winfo_screenwidth()
-        #screen_height = self.root.winfo_screenheight()
-        
-        #self.root.geometry(f"{screen_width}x{screen_height}")
-        #self.root.configure(bg = self.root_bg)
-        #self.root.resizable(False, False)
 
         self.root.state("zoomed")
         self.root.configure(bg=self.root_bg)
 
         self.root.minsize(800, 600)
         
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure(
+            "Visible.Vertical.TScrollbar",
+            gripcount=0,
+            background="gray55",
+            darkcolor="gray35",
+            lightcolor="gray55",
+            troughcolor="gray10",
+            bordercolor="gray10",
+            arrowcolor="white"
+        )
+        
         # --------------------- INTERFACE FUNCTIONS ---------------------
         
         self.current_page = None
         self.json = "titulos.json"
+        
+        
+        self.selected_song = None
+        self.selected_song_frame = None
+        self.selected_song_label = None
+        self.selected_song_cover = None
         
         self.load_json()
         self.load_icons()
@@ -64,7 +78,7 @@ class MusicPlayer:
         self.switch_pages("home", self.home_indicator)
         #lambda event pasa el evento como argumento aunque no se use o indique automaticamente
         
-        
+            
     def load_icons(self):
         def load(path):
             img = Image.open(path).resize((60, 60))
@@ -219,49 +233,138 @@ class MusicPlayer:
             bg=self.root_bg,
             fg="white"
         ).pack(pady=20)
+        
+        self.selected_song_label = tk.Label(
+            frame,
+            text="No song selected",
+            font=("Arial", 14),
+            bg=self.root_bg,
+            fg="white"
+        )
+        self.selected_song_label.pack(pady=20)
 
         self.load_info_tree()
-        self.tree_frame = tk.Frame(frame, bg = self.tree_bg, width= 400, height=400)
-        self.tree_frame.pack(side = LEFT, fill = tk.Y, pady= 20, padx= 20)
-        self.tree_frame.pack_propagate(False)
 
-        columns = ["Path", "Title", "Artist", "Album"]
-        self.tree = ttk.Treeview(self.tree_frame, columns = ("Path", "Title", "Artist", "Album"))
+        self.container_frame = tk.Frame(frame, bg=self.tree_bg, width=400, height=400)
+        self.container_frame.pack(side=tk.LEFT, fill=tk.Y, pady=20, padx=20)
+        self.container_frame.pack_propagate(False)
         
-        for col in columns:
-            self.tree.heading(col, text=col)
-        self.tree.column('#0', width=0, stretch='no')
-        self.tree.pack(side = LEFT,fill= tk.BOTH, ipadx= 10, ipady=10)
+        self.list_container_frame = tk.Frame(self.container_frame, bg=self.tree_bg)
+        self.list_container_frame.pack(fill=tk.BOTH, expand=True,padx=18, pady=(0, 18))
         
+        self.canvas = tk.Canvas(self.list_container_frame, bg= self.tree_bg, highlightthickness=0, bd=0)
+        
+        self.scrollbar = ttk.Scrollbar(
+            self.list_container_frame,
+            orient=tk.VERTICAL,
+            command=self.canvas.yview,
+            style="Visible.Vertical.TScrollbar"
+        )
+        
+        self.scrollable_frame = tk.Frame(self.canvas, bg=self.tree_bg)
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        
+        self.canvas.configure(yscrollcommand= self.scrollbar.set)
+        
+        self.canvas.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.scrollable_frame.bind(
+            "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        self.canvas.bind(
+            "<Configure>", lambda e: self.canvas.itemconfigure(self.canvas_window, width=e.width)
+        )
+        
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<Button-4>", self._on_mousewheel)
+        self.canvas.bind("<Button-5>", self._on_mousewheel)
+        
+        self.scrollable_frame.bind("<MouseWheel>", self._on_mousewheel)
+        self.scrollable_frame.bind("<Button-4>", self._on_mousewheel)
+        self.scrollable_frame.bind("<Button-5>", self._on_mousewheel)
+        
+        self.canvas_selected_song = tk.Canvas(frame, bg=self.tree_bg, width=600, height=600, highlightthickness=0, bd=0)
+        self.canvas_selected_song.pack( padx=20, pady=20)
+        
+        
+        self.show_songs()
         return frame
+    
+    def _on_mousewheel(self, event):
+        if event.num == 4:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.canvas.yview_scroll(1, "units")
+        else:
+            self.canvas.yview_scroll(int(-event.delta / 120), "units")
+        
+    def show_songs(self):
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+        
+        for song in self.datos["songs"]:
+            title = song.get("title", "Unknown")
+            artist = song.get("artist", "Unknown")
+            album = song.get("album", "Unknown")
+            path = song.get("path", "")
+            
+            song_frame = tk.Frame(self.scrollable_frame, bg=self.tree_bg, pady=5)
+            
+            
+            cover = self.load_cover(path)
+            cover_label = tk.Label(song_frame, image=cover, bg=self.tree_bg)
+            cover_label.image = cover
+            cover_label.pack(side=tk.LEFT, padx=5)
+            
+            title =tk.Label(song_frame, text=title, fg="white", bg="#121212").pack(anchor="w")
+            artist =tk.Label(song_frame, text=artist, fg="gray", bg="#121212").pack(anchor="w")
+            album =tk.Label(song_frame, text=album, fg="gray", bg="#121212").pack(anchor="w")
+
+            song_frame.pack(fill="x", padx=5, pady=5)
+            
+            song_frame.bind("<Button-1>", lambda e, f=song_frame, s=song: self.select_song(f, s))
+            
+            for widget in song_frame.winfo_children():
+                widget.bind("<Button-1>", lambda e, f=song_frame, s=song: self.select_song(f, s))
+            
+            song_frame.bind("<MouseWheel>", self._on_mousewheel)
+            song_frame.bind("<Button-4>", self._on_mousewheel)
+            song_frame.bind("<Button-5>", self._on_mousewheel)
+        
+        self.scrollable_frame.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    
+    def select_song(self, frame, song):
+        if self.selected_song_frame is not None:
+            self.selected_song_frame.configure(bg=self.tree_bg)
+            frame.configure(bg=self.tree_bg)
+        self.selected_song = song
+        
+        frame.configure(bg="gray30")
+        self.selected_song_frame = frame
+        
+        if self.selected_song_label is not None:
+            title = song.get("title", "Unknown")
+            artist = song.get("artist", "Unknown")
+            self.selected_song_label.configure(text=f"Selected: {title} - {artist}")
+        
+        if self.canvas_selected_song is not None:
+            path = song.get("path", "")
+            self.selected_song_cover = self.load_cover(path, size=420)
+            self.canvas_selected_song.delete("all")
+            self.canvas_selected_song.create_image(300, 300, image=self.selected_song_cover)
+        
+        return self.selected_song
 
     def load_info_tree(self):
         try:
-            with open("titulos.json","r") as file:
+            with open("titulos.json", "r") as file:
                 self.datos = json.load(file)
-
-                print(len(self.datos["songs"]))
-
-                for e in range(len(self.datos["songs"])):
-                    path = (self.datos["songs"][e]["path"])
-                    name = (self.datos["songs"][e]["name"])
-                    
         except FileNotFoundError:
-            self.datos = {}
-
-    def create_playlist_screen(self):
+            self.datos = {"songs": []}
     
-        frame = tk.Frame(self.page_frame, bg=self.root_bg)
-
-        tk.Label(
-            frame,
-            text="Crear Playlist",
-            font=("Arial", 30, "bold"),
-            bg=self.root_bg,
-            fg="white"
-        ).pack(pady=20)
-
-        return frame
+    
     
     def create_load_screen(self):
     
@@ -332,6 +435,17 @@ class MusicPlayer:
         if file_path:
             self.add_song(file_path)
 
+    def create_playlist_screen(self):
+        frame = tk.Frame(self.page_frame, bg=self.root_bg)
+        tk.Label(
+            frame,
+            text="Crear playlist",
+            font=("Arial", 30, "bold"),
+            bg=self.root_bg,
+            fg="white"
+            ).pack(pady=20)
+        return frame
+
     def add_song(self,file_path):
         
         music_folder = "music"
@@ -339,9 +453,6 @@ class MusicPlayer:
 
         filename = os.path.basename(file_path)
         destination = os.path.join(music_folder, filename)
-
-        print(destination)
-
 
         # copia el archivo a la carpeta solo si no existe
         if not os.path.exists(destination):
@@ -384,8 +495,36 @@ class MusicPlayer:
         title = (audio.get("title",['Unknown'])[0])
         artist = audio.get("artist", ['Unknown'])[0]
         album = audio.get("album", ['Unknown'])[0]
-        
+       
         return title,artist,album
+    
+    def get_cover(self, path):
+        cover_data = None
+        try:
+            audio_id3 = ID3(path)
+            for tag in audio_id3.values():
+                if tag.FrameID == "APIC":
+                    cover_data = tag.data
+                    break
+        except Exception as e:
+            print("No cover:", e)
+        return cover_data
+    
+    def load_cover(self, path, size=50):
+        cover_data = self.get_cover(path)
+
+        try:
+            if cover_data:
+                img = Image.open(BytesIO(cover_data)).convert("RGB")
+            else:
+                raise Exception("No cover")
+
+        except:
+            img = Image.new("RGB", (size, size), "#2f2f2f")
+
+        img = img.resize((size, size), Image.LANCZOS)
+        
+        return ImageTk.PhotoImage(img)
 
 root = tkdnd.Tk()
 MusicPlayer(root)
