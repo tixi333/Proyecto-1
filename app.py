@@ -1,3 +1,7 @@
+import tkinter as tk
+from tkinter import ttk
+
+from PIL import Image, ImageTk
 import pygame
 
 from ui_navigation import Navigation
