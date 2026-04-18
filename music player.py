@@ -9,7 +9,7 @@ import json, os
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3
 from io import BytesIO
-
+import pygame
 ## 1
 ## add from file screen : + input artist, title, album, load cover manually
 ##                        + tinytag/mutagen for metadata (artist, title, album) and cover
@@ -21,12 +21,11 @@ from io import BytesIO
 class MusicPlayer:
     def __init__(self,root):
         
-        #--------------------------------------------------------CONFIGURACION INICIAL--------------------------------------------------------
-        ##pallet colors
+        #=================================CONFIGURACION INICIAL=========================================
+        
         self.root_bg = "black"
         self.menu_bg = "PaleVioletRed3"
         self.tree_bg = "black"
-        ## Root configuration // title, size, not resizable, initial background color
         
         self.root = root
         self.root.title("Music Player")
@@ -35,6 +34,8 @@ class MusicPlayer:
         self.root.configure(bg=self.root_bg)
 
         self.root.minsize(800, 600)
+        
+        pygame.mixer.init()
         
         style = ttk.Style()
         style.theme_use("clam")
@@ -49,7 +50,6 @@ class MusicPlayer:
             arrowcolor="white"
         )
         
-        # --------------------- INTERFACE FUNCTIONS ---------------------
         
         self.current_page = None
         self.json = "titulos.json"
@@ -60,6 +60,15 @@ class MusicPlayer:
         self.selected_song_label = None
         self.selected_song_cover = None
         
+        self.is_paused = False
+        self.is_playing = False
+        self.current_path = None
+        self.current_index = -1
+        
+        self.active_playlist = None
+        
+        self.song_frames = {}
+        
         self.load_json()
         self.load_icons()
         
@@ -68,6 +77,8 @@ class MusicPlayer:
         self.page_frame = tk.Frame(self.root, bg = self.root_bg)
         self.page_frame.pack(fill = tk.BOTH, expand = True)
         
+        
+        
         self.screens = {
             "home": self.create_home_screen(),
             "playlist": self.create_playlist_screen(),
@@ -75,20 +86,12 @@ class MusicPlayer:
         }
         
         
+        self.create_song_bar()
+        
         self.switch_pages("home", self.home_indicator)
         #lambda event pasa el evento como argumento aunque no se use o indique automaticamente
         
-            
-    def load_icons(self):
-        def load(path):
-            img = Image.open(path).resize((60, 60))
-            return ImageTk.PhotoImage(img)
-
-        self.menu_icon = load("menuicons/menu_icon.png")
-        self.close_icon = load("menuicons/close_icon.png")
-        self.home_icon = load("menuicons/home_icon.png")
-        self.playlist_icon = load("menuicons/create_playlist_icon.png")
-        self.add_icon = load("menuicons/addfromfile_icon.png")
+    #======================================= MENU BAR ==========================================     
 
     def create_sidebar(self):
         self.menu_frame_bar = tk.Frame(self.root, bg = self.menu_bg, width=100)
@@ -122,6 +125,24 @@ class MusicPlayer:
         self.playlist_lb = self.create_label("Create playlist", 350, self.playlist_indicator, "playlist")
         self.add_lb = self.create_label("Add from file", 500, self.add_indicator, "load")
     
+    #============================================ ICONOS-LABELS-BOTONES ==========================================================
+    def load_icons(self):
+        def load(path,size):
+            img = Image.open(path).resize((size, size))
+            return ImageTk.PhotoImage(img)
+
+        self.menu_icon = load("menuicons/menu_icon.png",60)
+        self.close_icon = load("menuicons/close_icon.png",60)
+        self.home_icon = load("menuicons/home_icon.png",60)
+        self.playlist_icon = load("menuicons/create_playlist_icon.png",60)
+        self.add_icon = load("menuicons/addfromfile_icon.png",60)
+        
+        self.play_icon = load("songicons/play.png",40)
+        self.pause_icon= load("songicons/pausa.png",40)
+        self.next_icon = load("songicons/angulo-derecho.png",40)
+        self.previous_icon = load("songicons/angulo-izquierdo.png",40)
+        
+        
     def create_label(self, text,y, indicator, page):
         lb = tk.Label(self.menu_frame_bar,
                       font = ("Arial", 20, "bold"),
@@ -143,6 +164,7 @@ class MusicPlayer:
         
         btn.place(x= 15, y= y)
         return btn
+    #=============================== INDICADORES DE SELECCION EN EL MENU ==================================
     
     def create_indicators(self, y):
         ind = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
@@ -165,7 +187,12 @@ class MusicPlayer:
             frame.destroy()
         
         page()
+        
+    def reset_indicators(self):
+        for indicator in [self.home_indicator, self.playlist_indicator, self.add_indicator]:
+            indicator.configure(bg = self.menu_bg)
     
+    ##================================ SIDE BAR ANIMACIÓN Y FUNCIONAMIENTO ==================================
     def toggle_menu(self):
         self.animation_menu(opening = True)
         self.show_labels()
@@ -191,7 +218,8 @@ class MusicPlayer:
                 current_width -= 10
                 self.menu_frame_bar.configure(width = current_width)
                 self.root.after(5, func= lambda: self.animation_menu(opening=False))
-                
+    
+    #=============================== MOSTRAR Y OCULTAR LABELS DEL MENU ==================================            
     def show_labels(self):
         self.home_lb.place(x=90, y=220)
         self.playlist_lb.place(x=90, y=370)
@@ -202,10 +230,9 @@ class MusicPlayer:
         self.playlist_lb.place_forget()
         self.add_lb.place_forget()
 
-    def reset_indicators(self):
-        for indicator in [self.home_indicator, self.playlist_indicator, self.add_indicator]:
-            indicator.configure(bg = self.menu_bg)
-            
+    
+    ##================================ SWITCH PAGES Y MOSTRAR PAGINA SELECCIONADA ================================
+    
     def switch_pages(self, page, indicator):
         self.reset_indicators()
         indicator.configure(bg = "black")
@@ -221,6 +248,60 @@ class MusicPlayer:
 
         self.screens[page].pack(fill=tk.BOTH, expand=True)
         self.current_page = page
+        
+        if page in ("playlist", "load"):
+            self.show_song_bar()
+        else:
+            self.hide_song_bar()
+    
+    ##================================ CREAR BARRA DE CANCIONES ==================================
+    
+    def create_song_bar(self):
+        
+        self.song_frame = tk.Frame(self.root, bg = self.menu_bg, height=125)
+        
+        self.play_btn = tk.Button(self.song_frame,
+                        image= self.play_icon,
+                        command= self.music_activity,
+                        bg = self.menu_bg,
+                        activebackground = self.menu_bg,
+                        bd =0)
+        
+        self.next_btn = tk.Button(self.song_frame,
+                        image= self.next_icon,
+                        command= self.next_song,
+                        bg = self.menu_bg,
+                        activebackground = self.menu_bg,
+                        bd =0)
+        
+        self.previous_btn = tk.Button(self.song_frame,
+                        image= self.previous_icon,
+                        command= self.previous_song,
+                        bg = self.menu_bg,
+                        activebackground = self.menu_bg,
+                        bd =0)
+        
+        self.progressb = ttk.Progressbar(self.song_frame, 
+                                         orient= "horizontal",
+                                         length= 1000)
+        
+        self.progressb.place(relx=0.5, rely=0.75, anchor="center")
+        
+        self.play_btn.place(relx=0.5, rely=0.35, anchor="center")
+        self.next_btn.place(in_= self.play_btn, relx=2.5, x=5) 
+        self.previous_btn.place(in_= self.play_btn, relx=-2.5, x=-5) 
+    
+    def show_song_bar(self):
+        if self.song_frame.winfo_manager() == "":
+            self.song_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=10, padx=10)
+    
+    def hide_song_bar(self):
+        if self.song_frame.winfo_manager() == "pack":
+            self.song_frame.pack_forget()
+        
+
+    
+    ## ================================= CREAR HOME SCREEN ==================================
     
     def create_home_screen(self):
     
@@ -291,6 +372,7 @@ class MusicPlayer:
         self.show_songs()
         return frame
     
+    ##================================ SCROLL CON MOUSEWHEEL ==================================
     def _on_mousewheel(self, event):
         if event.num == 4:
             self.canvas.yview_scroll(-1, "units")
@@ -298,12 +380,16 @@ class MusicPlayer:
             self.canvas.yview_scroll(1, "units")
         else:
             self.canvas.yview_scroll(int(-event.delta / 120), "units")
+   
+   ##================================ MOSTRAR CANCIONES EN SCROLLABLE FRAME ===================
         
     def show_songs(self):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
+
+        self.song_frames.clear()
         
-        for song in self.datos["songs"]:
+        for index, song in enumerate(self.get_current_song()):
             title = song.get("title", "Unknown")
             artist = song.get("artist", "Unknown")
             album = song.get("album", "Unknown")
@@ -311,6 +397,7 @@ class MusicPlayer:
             
             song_frame = tk.Frame(self.scrollable_frame, bg=self.tree_bg, pady=5)
             
+            self.song_frames[index] = song_frame
             
             cover = self.load_cover(path)
             cover_label = tk.Label(song_frame, image=cover, bg=self.tree_bg)
@@ -325,6 +412,7 @@ class MusicPlayer:
             
             song_frame.bind("<Button-1>", lambda e, f=song_frame, s=song: self.select_song(f, s))
             
+            
             for widget in song_frame.winfo_children():
                 widget.bind("<Button-1>", lambda e, f=song_frame, s=song: self.select_song(f, s))
             
@@ -334,14 +422,31 @@ class MusicPlayer:
         
         self.scrollable_frame.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def set_song_frame_state(self, frame, active=False):
+        if frame is None:
+            return
+
+        bg_color = "gray30" if active else self.tree_bg
+        frame.configure(bg=bg_color)
+
+        for widget in frame.winfo_children():
+            widget.configure(bg=bg_color)
+    
+    ##================================ SELECCIONAR CANCION ==================================
     
     def select_song(self, frame, song):
         if self.selected_song_frame is not None:
-            self.selected_song_frame.configure(bg=self.tree_bg)
-            frame.configure(bg=self.tree_bg)
+            self.set_song_frame_state(self.selected_song_frame, active=False)
+            
         self.selected_song = song
+        songs = self.get_current_song()
+        try:
+            self.current_index = songs.index(song)
+        except ValueError:
+            self.current_index = -1
         
-        frame.configure(bg="gray30")
+        self.set_song_frame_state(frame, active=True)
         self.selected_song_frame = frame
         
         if self.selected_song_label is not None:
@@ -351,12 +456,106 @@ class MusicPlayer:
         
         if self.canvas_selected_song is not None:
             path = song.get("path", "")
+            self.current_path = path
+            
             self.selected_song_cover = self.load_cover(path, size=420)
             self.canvas_selected_song.delete("all")
             self.canvas_selected_song.create_image(300, 300, image=self.selected_song_cover)
+            
+        self.play_song(path)
         
         return self.selected_song
+    
+    def get_current_song(self):
+        
+        if self.active_playlist == None:
+            songs = self.load_songs()["songs"]
+            return songs
+        else:
+            with open(self.active_playlist, "r") as f:
+                data = json.load(f)
+                return data["songs"]
+    
+    def next_song(self):
+        songs = self.get_current_song()
+        
 
+        if 0 <= self.current_index < len(songs) - 1:
+            self.play_song_by_index(self.current_index + 1)
+    
+    def previous_song(self):
+        if self.current_index > 0:
+            self.play_song_by_index(self.current_index - 1)
+            
+    def play_song_by_index(self, index):
+        songs = self.get_current_song()
+        
+        if 0 <= index < len(songs):
+            song = songs[index]
+            self.current_index = index
+            self.selected_song = song
+            
+            if self.selected_song_frame is not None:
+                self.set_song_frame_state(self.selected_song_frame, active=False)
+                
+            song_frame = self.song_frames.get(index)
+            self.set_song_frame_state(song_frame, active=True)
+            self.selected_song_frame = song_frame
+            
+            title = song.get("title", "Unknown")
+            artist = song.get("artist", "Unknown")
+            if self.selected_song_label is not None:
+                self.selected_song_label.configure(text=f"Selected: {title} - {artist}")
+
+            path = song.get("path", "")
+            self.current_path = path
+
+            if self.canvas_selected_song is not None:
+                self.selected_song_cover = self.load_cover(path, size=420)
+                self.canvas_selected_song.delete("all")
+                self.canvas_selected_song.create_image(300, 300, image=self.selected_song_cover)
+
+            self.play_song(path)
+            
+        
+    def play_song(self, path):
+        pygame.mixer.music.load(path)
+        pygame.mixer.music.play()
+
+        self.is_playing = True
+        self.is_paused = False
+        self.current_path = path
+
+        self.play_btn.configure(image=self.pause_icon)
+    
+    def music_activity(self):
+        
+        if self.current_path is None:
+            return
+
+        if not self.is_playing and not self.is_paused:
+            pygame.mixer.music.load(self.current_path)
+            pygame.mixer.music.play()
+
+            self.is_playing = True
+            self.is_paused = False
+            self.play_btn.configure(image=self.pause_icon)
+            return
+
+        if self.is_playing and not self.is_paused:
+            pygame.mixer.music.pause()
+            self.is_paused = True
+            self.is_playing = False
+            self.play_btn.configure(image=self.play_icon)
+            return
+
+        if self.is_paused:
+            pygame.mixer.music.unpause()
+            self.is_paused = False
+            self.is_playing = True
+            self.play_btn.configure(image=self.pause_icon)
+                
+    ##================================ CARGAR A SCROLLABLE FRAME ==================================
     def load_info_tree(self):
         try:
             with open("titulos.json", "r") as file:
@@ -364,7 +563,7 @@ class MusicPlayer:
         except FileNotFoundError:
             self.datos = {"songs": []}
     
-    
+    ##================================ CREAR LOAD_SCREEN ==================================
     
     def create_load_screen(self):
     
@@ -410,6 +609,7 @@ class MusicPlayer:
         drop_frame.dnd_bind("<<Drop>>", self.handle_drop)
 
         return frame
+    ##================================ DRAG AND DROP ==================================
     
     def handle_drop(self, event):
         # event.data = la ruta del archivo arrastrado 
@@ -425,15 +625,8 @@ class MusicPlayer:
             else:
                 print(f"Formato no soportado: {normalized_path}")
     
-    
-    def load_file(self):
-        file_path = filedialog.askopenfilename(
-        filetypes=[("Audio Files", "*.mp3 *.wav")]
-        )
-        print(file_path)
-
-        if file_path:
-            self.add_song(file_path)
+            
+    ##================================ CREAR PLAYLIST ==================================
 
     def create_playlist_screen(self):
         frame = tk.Frame(self.page_frame, bg=self.root_bg)
@@ -446,6 +639,16 @@ class MusicPlayer:
             ).pack(pady=20)
         return frame
 
+    ##================================ CARGAR Y GUARDAR CANCIONES ==================================
+    
+    def load_file(self):
+        file_path = filedialog.askopenfilename(
+        filetypes=[("Audio Files", "*.mp3 *.wav")]
+        )
+
+        if file_path:
+            self.add_song(file_path)
+            
     def add_song(self,file_path):
         
         music_folder = "music"
@@ -487,7 +690,10 @@ class MusicPlayer:
     def save_songs(self, data):
         with open(self.json, "w") as f:
             json.dump(data, f, indent=4)
-            
+    
+    
+    ##================================ METADATA ==================================
+    
     def get_song_info(self,destination):
 
         audio = EasyID3(destination)
@@ -498,6 +704,8 @@ class MusicPlayer:
        
         return title,artist,album
     
+    ##================================ COVER ==================================
+       
     def get_cover(self, path):
         cover_data = None
         try:
@@ -519,8 +727,10 @@ class MusicPlayer:
             else:
                 raise Exception("No cover")
 
-        except:
-            img = Image.new("RGB", (size, size), "#2f2f2f")
+        except Exception:
+            
+            img = Image.open("cover/no_cover.png")
+            
 
         img = img.resize((size, size), Image.LANCZOS)
         
