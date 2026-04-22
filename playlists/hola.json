@@ -1,0 +1,12 @@
+{
+    "name": "hola",
+    "songs": [
+        {
+            "path": "music\\DND ESTAS - TAICHU (128k).mp3",
+            "name": "DND ESTAS - TAICHU (128k).mp3",
+            "title": "DND ESTAS",
+            "artist": "TAICHU",
+            "album": "HOTCORE"
+        }
+    ]
+}

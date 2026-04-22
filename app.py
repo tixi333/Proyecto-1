@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageDraw, ImageTk
 import pygame
 
 from ui_navigation import Navigation
@@ -27,18 +27,8 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
 
         pygame.mixer.init()
 
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure(
-            "Visible.Vertical.TScrollbar",
-            gripcount=0,
-            background="gray55",
-            darkcolor="gray35",
-            lightcolor="gray55",
-            troughcolor="gray10",
-            bordercolor="gray10",
-            arrowcolor="white"
-        )
+        self.style = ttk.Style()
+        self.style.theme_use("clam")
 
         self.current_page = None
         self.json = "titulos.json"
@@ -56,13 +46,25 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.active_playlist = None
 
         self.song_frames = {}
-        self.menu_animation_job = None
-        self.menu_labels_visible = False
-        self.label_animation_jobs = []
+ 
         self.song_render_jobs = []
+        
+        self.progress_value = tk.DoubleVar(value=0)
+        self.total_seconds = 0
+        self.progress_job = None
+        self.playback_offset = 0
+        self.volume_value = tk.DoubleVar(value=70)
+        self.shuffle_enabled = False
+        self.loop_enabled = False
+        self.playlist_selected_songs = []
+        self.saved_playlist_search_var = tk.StringVar()
+        self.available_song_search_var = tk.StringVar()
+        self.selected_playlist_search_var = tk.StringVar()
 
         self.load_json()
         self.load_icons()
+
+        pygame.mixer.music.set_volume(self.volume_value.get() / 100)
 
         self.create_sidebar()
 
@@ -78,6 +80,8 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.create_song_bar()
 
         self.switch_pages("home", self.home_indicator)
+        
+        
 
     def load_icons(self):
         def load(path, size):
@@ -94,3 +98,10 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.pause_icon = load("songicons/pausa.png", 40)
         self.next_icon = load("songicons/angulo-derecho.png", 40)
         self.previous_icon = load("songicons/angulo-izquierdo.png", 40)
+        
+        self.stop_icon = load("songicons/stop.png",40)
+        self.shuffle_on = load("songicons/shuffle-on.png",40)
+        self.shuffle_off = load("songicons/shuffle-off.png",40)
+        self.loop = load("songicons/loop.png",40)
+
+        

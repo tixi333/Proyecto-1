@@ -77,9 +77,20 @@ class Navigation:
 
         self.screens[page].pack(fill=tk.BOTH, expand=True)
         self.current_page = page
+
+        if page == "home":
+            
+            self.refresh_saved_playlists_list()
+            self.update_current_source_label()
+
+        if page == "playlist":
+            self.refresh_playlist_builder_lists()
+            self.refresh_saved_playlists_list()
+            self.update_current_source_label()
         
         if page in ("playlist", "load"):
             self.show_song_bar()
         else:
             self.hide_song_bar()
+    
     

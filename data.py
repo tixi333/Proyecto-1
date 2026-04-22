@@ -7,6 +7,49 @@ import shutil
 from PIL import Image, ImageTk
 
 class Data:
+    def get_playlist_folder(self):
+        playlist_folder = "playlists"
+        os.makedirs(playlist_folder, exist_ok=True)
+        return playlist_folder
+
+    def save_playlist_data(self, playlist_name, songs):
+        safe_name = "".join(char for char in playlist_name.strip() if char.isalnum() or char in (" ", "-", "_")).strip()
+        if not safe_name:
+            raise ValueError("Playlist name is required")
+
+        playlist_path = os.path.join(self.get_playlist_folder(), f"{safe_name}.json")
+        playlist_data = {
+            "name": playlist_name.strip(),
+            "songs": songs
+        }
+
+        with open(playlist_path, "w") as file:
+            json.dump(playlist_data, file, indent=4)
+
+        return playlist_path
+
+    def list_saved_playlists(self):
+        playlists = []
+
+        for filename in sorted(os.listdir(self.get_playlist_folder())):
+            if not filename.lower().endswith(".json"):
+                continue
+
+            playlist_path = os.path.join(self.get_playlist_folder(), filename)
+
+            try:
+                with open(playlist_path, "r") as file:
+                    data = json.load(file)
+            except (OSError, json.JSONDecodeError):
+                continue
+
+            playlists.append({
+                "name": data.get("name", os.path.splitext(filename)[0]),
+                "path": playlist_path
+            })
+
+        return playlists
+
     def get_current_song(self):
         if self.active_playlist is None:
             songs = self.load_songs()["songs"]
@@ -115,7 +158,9 @@ class Data:
         return cover_data
     
     def load_cover(self, path, size=50):
-        cover_data = self.get_cover(path)
+        cover_data = None
+        if path:
+            cover_data = self.get_cover(path)
 
         try:
             if cover_data:
