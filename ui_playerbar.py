@@ -171,7 +171,15 @@ class PlayerBar():
             self.sync_control_states()
         
     def check_mode(self):
+        
         self.root.after(500, self.check_mode)
+
+        if self.current_mode == None:
+            return None
+        elif self.current_mode == "shuffle":
+            return "shuffle"
+        else:
+            return "loop"
         
 
     def stop_song(self):
