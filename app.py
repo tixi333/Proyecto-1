@@ -13,10 +13,12 @@ from data import Data
 class MusicPlayer(Navigation, PlayerBar, Screens, Data):
     def __init__(self,root):
         
+        # color
         self.root_bg = "black"
         self.menu_bg = "PaleVioletRed3"
         self.tree_bg = "black"
         
+        #root config
         self.root = root
         self.root.title("Music Player")
 
@@ -25,6 +27,7 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
 
         self.root.minsize(800, 600)
 
+        #
         pygame.mixer.init()
 
         self.style = ttk.Style()
@@ -33,6 +36,8 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.current_page = None
         self.json = "titulos.json"
 
+        
+        #selected song verificaciones
         self.selected_song = None
         self.selected_song_frame = None
         self.selected_song_label = None
@@ -43,19 +48,27 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.current_path = None
         self.current_index = -1
 
+        #playlist verificacion
         self.active_playlist = None
 
         self.song_frames = {}
  
         self.song_render_jobs = []
         
+        #barra de progreso selected song
         self.progress_value = tk.DoubleVar(value=0)
         self.total_seconds = 0
         self.progress_job = None
         self.playback_offset = 0
+
+        #volumen
         self.volume_value = tk.DoubleVar(value=70)
+
+        #modos
         self.shuffle_enabled = False
         self.loop_enabled = False
+        self.current_mode = None
+
         self.playlist_selected_songs = []
         self.saved_playlist_search_var = tk.StringVar()
         self.available_song_search_var = tk.StringVar()

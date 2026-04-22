@@ -112,7 +112,7 @@ class Screens:
 
         self.load_original_btn = tk.Button(
             self.home_playlist_buttons,
-            text="Original",
+            text="Loaded",
             command=self.load_original_library,
             bg="gray70",
             activebackground="gray55",
@@ -126,7 +126,7 @@ class Screens:
 
         self.load_playlist_btn = tk.Button(
             self.home_playlist_buttons,
-            text="Load Playlist",
+            text="Playlist",
             command=self.load_selected_playlist,
             bg="PaleVioletRed3",
             activebackground="PaleVioletRed4",
@@ -146,14 +146,6 @@ class Screens:
     def create_playlist_screen(self):
         frame = tk.Frame(self.page_frame, bg=self.root_bg)
 
-        tk.Label(
-            frame,
-            text="Create Playlist",
-            font=("Arial", 24, "bold"),
-            bg=self.root_bg,
-            fg="white"
-        ).pack(anchor="nw", padx=20, pady=(20, 0))
-
         self.playlist_setting(frame=frame)
         return frame
     
@@ -162,27 +154,27 @@ class Screens:
             self.setting_f.destroy()
         #==================================================================================================================
         
-        self.setting_f = tk.Frame(frame, 
-                                  bg = "grey15",
-                                  height= 700,
-                                  width= 800)
+        self.setting_f = tk.Frame(frame,
+                                bg = "grey15",
+                                height= 500,
+                                width= 800)
         
         self.setting_f.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=20, pady=20, anchor="nw")
         self.setting_f.pack_propagate(False)
         #==================================================================================================================
         self.name_frame = tk.LabelFrame(self.setting_f,
-                                   text = "Playlist Name",
+                                    text = "Playlist Name",
                                     fg = "white",
                                     bg = "grey25",
                                     width = 500,
-                                    height= 150)
+                                    height= 100)
     
         
         self.name_frame.pack(side=tk.TOP, anchor="nw", padx=20, pady=20)
         self.name_frame.pack_propagate(False)
        
         self.name_entry= tk.Entry(self.name_frame, justify= tk.LEFT, width= 50, font=("Arial", 20), fg = "grey10")
-        self.name_entry.pack(side=tk.TOP, anchor="nw", padx=40, pady=40)
+        self.name_entry.pack(side=tk.TOP, anchor="nw", padx=10, pady=10)
         
         #==================================================================================================================
         self.playlist_lists_frame = tk.Frame(self.setting_f, bg="grey15")
@@ -244,7 +236,7 @@ class Screens:
 
         self.add_song_to_playlist_btn = tk.Button(
             self.playlist_actions_frame,
-            text="Add ->",
+            text="--->",
             command=self.add_selected_songs_to_playlist,
             bg="PaleVioletRed3",
             activebackground="PaleVioletRed4",
@@ -258,7 +250,7 @@ class Screens:
 
         self.remove_song_from_playlist_btn = tk.Button(
             self.playlist_actions_frame,
-            text="<- Remove",
+            text="<---",
             command=self.remove_selected_songs_from_playlist,
             bg="gray70",
             activebackground="gray55",
@@ -323,7 +315,7 @@ class Screens:
         
 
         self.save_playlist_btn = tk.Button(
-            self.playlist_savef,
+            self.playlist_actions_frame,
             text="Save Playlist",
             command=self.save_playlist_selection,
             bg="PaleVioletRed3",
@@ -331,7 +323,7 @@ class Screens:
             fg="black",
             font=("Arial", 12, "bold"),
             bd=0,
-            padx=18,
+            padx=16,
             pady=10
         )
         self.save_playlist_btn.pack(side=tk.RIGHT)
@@ -641,9 +633,9 @@ class Screens:
 
         if self.canvas_selected_song is not None:
             path = "" if song is None else song.get("path", "")
-            self.selected_song_cover = self.load_cover(path, size=420)
+            self.selected_song_cover = self.load_cover(path, size=300)
             self.canvas_selected_song.delete("all")
-            self.canvas_selected_song.create_image(300, 300, image=self.selected_song_cover)
+            self.canvas_selected_song.create_image(200, 200, image=self.selected_song_cover)
 
     def sync_selected_song_state(self):
         songs = self.get_current_song()
@@ -691,13 +683,13 @@ class Screens:
 
     def create_song_slide_bar(self, frame):
         
-        self.frame_home = tk.Frame(frame, bg = "gray20", width=500)
+        self.frame_home = tk.Frame(frame, bg = "gray20", width=450)
         
         self.frame_home.pack(side= tk.RIGHT , fill = tk.Y , pady = 10, padx=10)
+        self.frame_home.pack_propagate(False)
         
-        
-        self.canvas_selected_song = tk.Canvas(self.frame_home, bg="gray15", width=600, height=600, highlightthickness=0, bd=0)
-        self.canvas_selected_song.pack( padx=20, pady=20)
+        self.canvas_selected_song = tk.Canvas(self.frame_home, bg="gray15", width=400, height=400, highlightthickness=0, bd=0)
+        self.canvas_selected_song.pack(anchor="center")
         
         self.info = tk.Frame (self.frame_home, bg = "gray15", width=600, height=600)
         self.info.pack(side =tk. TOP, fill= tk.BOTH, padx= 20, pady=20)
@@ -755,7 +747,7 @@ class Screens:
         
         self.progress = ttk.Progressbar(self.info,
                                    orient="horizontal",
-                                   length=500,
+                                   length=350,
                                    mode="determinate",
                                    variable=self.progress_value,
                                    maximum=100)
@@ -782,9 +774,9 @@ class Screens:
         )
         self.volume_slider2.pack(anchor="center", pady=(6, 0))
         
-        self.progress.place(relx=0.5, rely=0.78, anchor="center")
-        self.selected_song_label.place(relx=0.5, rely=0.18, anchor="center")
-        self.controls_frame2.place(relx=0.5, rely=0.45, anchor="center")
-        self.volume_frame2.place(relx=0.5, rely=0.60, anchor="center")
+        self.progress.place(relx=0.5, rely=0.8, anchor="center")
+        self.selected_song_label.place(relx=0.5, rely=0.15, anchor="center")
+        self.controls_frame2.place(relx=0.5, rely=0.35, anchor="center")
+        self.volume_frame2.place(relx=0.5, rely=0.6, anchor="center")
 
         self.sync_control_states()

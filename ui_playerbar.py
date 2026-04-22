@@ -6,7 +6,7 @@ from tkinter import ttk
 
 class PlayerBar():
     def create_song_bar(self):
-        self.song_frame = tk.Frame(self.root, bg="gray15", height=145)
+        self.song_frame = tk.Frame(self.root, bg="gray15", height=100)
 
         self.progressb = ttk.Progressbar(
             self.song_frame,
@@ -22,7 +22,7 @@ class PlayerBar():
         self.info_frame = tk.Frame(self.song_frame, bg="gray15")
         self.info_frame.place(relx=0.5, rely=0.35, anchor="center")
 
-        self.shuffle_btn = self.create_mode_button(self.info_frame, "Shuffle", self.toggle_shuffle)
+        self.shuffle_btn = self.create_mode_button(self.info_frame, self.shuffle_off, self.toggle_shuffle)
         self.shuffle_btn.pack(side=tk.LEFT, padx=6)
 
         self.previous_btn = tk.Button(
@@ -45,8 +45,7 @@ class PlayerBar():
         )
         self.play_btn.pack(side=tk.LEFT, padx=6)
 
-        self.stop_btn = self.create_mode_button(self.info_frame, "Stop", self.stop_song)
-        self.stop_btn.pack(side=tk.LEFT, padx=6)
+        
 
         self.next_btn = tk.Button(
             self.info_frame,
@@ -58,11 +57,14 @@ class PlayerBar():
         )
         self.next_btn.pack(side=tk.LEFT, padx=6)
 
-        self.loop_btn = self.create_mode_button(self.info_frame, "Loop", self.toggle_loop)
+        self.stop_btn = self.create_mode_button(self.info_frame, self.stop_icon, self.stop_song)
+        self.stop_btn.pack(side=tk.LEFT, padx=6)
+
+        self.loop_btn = self.create_mode_button(self.info_frame, self.loop, self.toggle_loop)
         self.loop_btn.pack(side=tk.LEFT, padx=6)
 
         self.volume_frame = tk.Frame(self.song_frame, bg="gray15")
-        self.volume_frame.place(relx=1, rely=0.35, anchor="e")
+        self.volume_frame.place(relx=0.8, rely=0.25, anchor="e")
 
         self.volume_label = tk.Label(
             self.volume_frame,
@@ -91,8 +93,8 @@ class PlayerBar():
             parent,
             image = img,
             command=command,
-            bg="gray30",
-            activebackground="gray45",
+            bg="gray15",
+            activebackground="gray15",
             relief=tk.FLAT,
             bd=0,
             padx=10,
@@ -100,7 +102,10 @@ class PlayerBar():
         )
 
     def set_play_button_state(self, is_playing):
-        icon = self.pause_icon if is_playing else self.play_icon
+        if is_playing:
+            icon = self.pause_icon
+        else:
+            icon = self.play_icon
 
         if hasattr(self, "play_btn") and self.play_btn is not None:
             self.play_btn.configure(image=icon)
@@ -109,30 +114,20 @@ class PlayerBar():
             self.play_btn2.configure(image=icon)
 
     def sync_control_states(self):
-        
-            
+        print(self.shuffle_enabled)
+
         if self.shuffle_enabled:
-            self.shuffle_btn.configure(image = self.shuffle_off)
+            icon = self.shuffle_on
         else:
-            self.shuffle_btn.configure(image = self.shuffle_on)
-            
-        if self.loop_enabled:
-            loop_bg = "PaleVioletRed3" 
-            loop_fg = "black"
-        else:
-            loop_bg = "gray30" 
-            loop_fg = "white"
-
-        for attr_name in ("shuffle_btn", "shuffle_btn2"):
-            button = getattr(self, attr_name, None)
-            if button is not None:
-                button.configure(bg=shuffle_bg, activebackground=shuffle_bg, fg=shuffle_fg, activeforeground=shuffle_fg)
-
-        for attr_name in ("loop_btn", "loop_btn2"):
-            button = getattr(self, attr_name, None)
-            if button is not None:
-                button.configure(bg=loop_bg, activebackground=loop_bg, fg=loop_fg, activeforeground=loop_fg)
-
+            icon = self.shuffle_off
+        
+        if hasattr(self, "shuffle_btn") and self.shuffle_btn is not None:
+            self.shuffle_btn.configure(image=icon)
+        
+        if hasattr(self, "shuffle_btn2") and self.shuffle_btn2 is not None:
+            self.shuffle_btn2.configure(image= icon)
+        
+        
         volume_text = f"Volume {int(round(self.volume_value.get()))}%"
         for attr_name in ("volume_label", "volume_label2"):
             label = getattr(self, attr_name, None)
@@ -146,15 +141,37 @@ class PlayerBar():
         self.sync_control_states()
 
     def toggle_shuffle(self):
-        self.shuffle_enabled = not self.shuffle_enabled
-        self.sync_control_states()
+
+        self.current_mode = self.check_mode()
+
+        if self.current_mode == None or self.current_mode == "shuffle":
+
+            if self.shuffle_enabled:
+                self.shuffle_enabled = False
+                self.current_mode = None
+                #sync --------------
+            else:
+                self.shuffle_enabled = True
+                self.current_mode = "shuffle"
+
+            self.sync_control_states()
 
     def toggle_loop(self):
-        if self.loop_enabled:
-            self.loop_enabled = False
-        else:
-            self.loop_enabled = True
-        self.sync_control_states()
+
+        self.current_mode = self.check_mode()
+
+        if self.current_mode == None or self.current_mode == "loop":
+            if self.loop_enabled:
+                self.loop_enabled = False
+                self.current_mode = None
+            else:
+                self.loop_enabled = True
+                self.current_mode = "loop"
+
+            self.sync_control_states()
+        
+    def check_mode(self):
+        self.root.after(500, self.check_mode)
         
 
     def stop_song(self):
