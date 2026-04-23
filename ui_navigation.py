@@ -82,6 +82,7 @@ class Navigation:
             
             self.refresh_saved_playlists_list()
             self.update_current_source_label()
+            self.refresh_home_song_list()
 
         if page == "playlist":
             self.refresh_playlist_builder_lists()

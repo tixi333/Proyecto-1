@@ -1,0 +1,61 @@
+#1er Commit (9/4): Interfaz gráfica
+
+- Creación de barra de menú:
+    + Botones
+    + Indicatores
+    + Animación de barra
+
+-Organización de pantallas
+
+#2do Commit (15/4): Interfaz gráfica + Lógica (archivos)
+
+- Creación de pantallas
+- Mejora de botones(menú)
+- Division en más funciones
+- Pantalla de carga de archivos:
+    + Funcion Drag and Drop 
+    + Cargar desde explorador de archivos
+    + json
+
+#3er Commit (15/4): Lógica + Interfaz gráfica
+    + Metadata
+    + Intento de tabla
+    + Carga de datos desde json
+    + Tabla scrollable con canciónes
+
+#4to Commit (20/4):
+    - Division por archivos:
+        * data: carga de datos
+        * ui.playerbar: barra de reproduccion de canciones
+        * ui.screens: distribución de pantallas
+        * main : loop principal (root) + ejecucion de clase
+        * app: clase MusicPlayer (llama a las demás) + variables + iconos + cargar pantalla principal (home_Screen)
+    
+    - ui.playerbar:
+        * reproducir música
+        * play/pause
+
+#5to Commit (21/4):
+    - Música:
+        * Volumen/loop/shuffle
+        * Barra de progreso
+    - Playlist:
+        * Interfaz
+        * Crear playlist, cargar o eliminar canciones, etc
+
+    - Inicio:
+        * Seleccionar playlist + busqueda
+        * Sacar barra 
+        * Crear frame principal 
+
+6to Commit (22/4):
+    - Arreglo de lógica (shuffle y loop)
+    - Tiempos de canción
+    - Arreglo de organización de interfaz 
+    - Mejora de búsqueda (por album y artista)
+    - Agregue entry serach en home screen
+
+
+
+    
+    

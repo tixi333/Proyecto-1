@@ -48,6 +48,22 @@ class Screens:
         self.scrollable_frame.bind("<MouseWheel>", self._on_mousewheel)
         self.scrollable_frame.bind("<Button-4>", self._on_mousewheel)
         self.scrollable_frame.bind("<Button-5>", self._on_mousewheel)
+        
+        self.song_search_frame = tk.Frame(frame,
+                                          bg = self.tree_bg,
+                                          height = 100,
+                                          width = 100)
+        
+        self.song_search_frame.pack(side=tk.TOP, anchor= "nw", padx=(0, 20), pady=20)
+        self.song_search_entry = tk.Entry(
+            self.song_search_frame,
+            textvariable=self.home_song_search_var,
+            font=("Arial", 12, "bold"),
+            fg="grey15",
+            width= 25
+        )
+        self.song_search_entry.pack(fill=tk.X, padx=12, pady=(4, 0))
+        self.song_search_entry.bind("<KeyRelease>", lambda e: self.refresh_home_song_list())
 
         self.home_playlist_frame = tk.LabelFrame(
             frame,
@@ -335,6 +351,21 @@ class Screens:
         artist = song.get("artist", "Unknown")
         return f"{title} - {artist}"
 
+    def song_matches_query(self, song, query):
+        if not query:
+            return True
+
+        title = song.get("title", "Unknown").lower()
+        album = song.get("album", "Unknown").lower()
+        artist = song.get("artist", "Unknown").lower()
+        return query in title or query in album or query in artist
+
+    def refresh_home_song_list(self):
+        if not hasattr(self, "scrollable_frame"):
+            return
+
+        self.show_songs()
+
     def refresh_playlist_builder_lists(self):
         if not hasattr(self, "available_songs_list"):
             return
@@ -343,15 +374,15 @@ class Screens:
         available_query = self.available_song_search_var.get().strip().lower()
         selected_query = self.selected_playlist_search_var.get().strip().lower()
 
-        self.filtered_playlist_library_songs = [
-            song for song in self.playlist_library_songs
-            if available_query in self.get_playlist_song_text(song).lower()
-        ]
+        self.filtered_playlist_library_songs = []
+        for song in self.playlist_library_songs:
+            if self.song_matches_query(song, available_query):
+                self.filtered_playlist_library_songs.append(song)
 
-        self.filtered_playlist_selected_songs = [
-            song for song in self.playlist_selected_songs
-            if selected_query in self.get_playlist_song_text(song).lower()
-        ]
+        self.filtered_playlist_selected_songs = []
+        for song in self.playlist_selected_songs:
+            if self.song_matches_query(song, selected_query):
+                self.filtered_playlist_selected_songs.append(song)
 
         self.available_songs_list.delete(0, tk.END)
         for song in self.filtered_playlist_library_songs:
@@ -531,8 +562,16 @@ class Screens:
             widget.destroy()
 
         self.song_frames.clear()
-        
-        for index, song in enumerate(self.get_current_song()):
+
+        songs = self.get_current_song()
+        query = self.home_song_search_var.get().strip().lower()
+
+        filtered_songs = []
+        for index, song in enumerate(songs):
+            if self.song_matches_query(song, query):
+                filtered_songs.append((index, song))
+
+        for index, song in filtered_songs:
             title = song.get("title", "Unknown")
             artist = song.get("artist", "Unknown")
             album = song.get("album", "Unknown")
@@ -742,7 +781,7 @@ class Screens:
         
         self.stop_btn2.pack(side=tk.LEFT, padx=6)
 
-        self.loop_btn2 = self.create_mode_button(self.controls_frame2, self.loop , self.toggle_loop)
+        self.loop_btn2 = self.create_mode_button(self.controls_frame2, self.loop_off , self.toggle_loop)
         self.loop_btn2.pack(side=tk.LEFT, padx=6)
         
         self.progress = ttk.Progressbar(self.info,
@@ -772,11 +811,26 @@ class Screens:
             variable=self.volume_value,
             command=self.change_volume
         )
+        
+        self.current_time_label = tk.Label(self.info, 
+                                           textvariable=self.current_time_var,
+                                           bg="gray15",
+                                           fg="white")
+        self.total_time_label = tk.Label(self.info,
+                                         textvariable=self.total_time_var,
+                                         bg="gray15",
+                                         fg="white")
+        
         self.volume_slider2.pack(anchor="center", pady=(6, 0))
         
         self.progress.place(relx=0.5, rely=0.8, anchor="center")
         self.selected_song_label.place(relx=0.5, rely=0.15, anchor="center")
         self.controls_frame2.place(relx=0.5, rely=0.35, anchor="center")
         self.volume_frame2.place(relx=0.5, rely=0.6, anchor="center")
+        
+        self.current_time_label.place(relx=0.1, rely=0.85, anchor="center")
+        self.total_time_label.place(relx=0.9, rely=0.85, anchor="center")
+        
+        
 
         self.sync_control_states()

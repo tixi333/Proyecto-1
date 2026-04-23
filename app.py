@@ -60,6 +60,9 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.total_seconds = 0
         self.progress_job = None
         self.playback_offset = 0
+        
+        self.current_time_var = tk.StringVar(value="0:00")
+        self.total_time_var = tk.StringVar(value="0:00")
 
         #volumen
         self.volume_value = tk.DoubleVar(value=70)
@@ -70,6 +73,7 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.current_mode = None
 
         self.playlist_selected_songs = []
+        self.home_song_search_var = tk.StringVar()
         self.saved_playlist_search_var = tk.StringVar()
         self.available_song_search_var = tk.StringVar()
         self.selected_playlist_search_var = tk.StringVar()
@@ -115,6 +119,7 @@ class MusicPlayer(Navigation, PlayerBar, Screens, Data):
         self.stop_icon = load("songicons/stop.png",40)
         self.shuffle_on = load("songicons/shuffle-on.png",40)
         self.shuffle_off = load("songicons/shuffle-off.png",40)
-        self.loop = load("songicons/loop.png",40)
+        self.loop_on = load("songicons/loop-on.png",40)
+        self.loop_off = load("songicons/loop-off.png",40)
 
         

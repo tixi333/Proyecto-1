@@ -19,6 +19,10 @@ class PlayerBar():
         self.progressb.bind("<Button-1>", self.seek_song)
         self.progressb.place(relx=0.5, rely=0.78, anchor="center")
 
+        self.time_bar_frame = tk.Frame(self.song_frame, bg="gray15", width=1000)
+        self.time_bar_frame.place(relx=0.5, rely=0.9, anchor="center")
+        self.time_bar_frame.pack_propagate(False)
+
         self.info_frame = tk.Frame(self.song_frame, bg="gray15")
         self.info_frame.place(relx=0.5, rely=0.35, anchor="center")
 
@@ -60,7 +64,7 @@ class PlayerBar():
         self.stop_btn = self.create_mode_button(self.info_frame, self.stop_icon, self.stop_song)
         self.stop_btn.pack(side=tk.LEFT, padx=6)
 
-        self.loop_btn = self.create_mode_button(self.info_frame, self.loop, self.toggle_loop)
+        self.loop_btn = self.create_mode_button(self.info_frame, self.loop_off, self.toggle_loop)
         self.loop_btn.pack(side=tk.LEFT, padx=6)
 
         self.volume_frame = tk.Frame(self.song_frame, bg="gray15")
@@ -85,6 +89,24 @@ class PlayerBar():
             command=self.change_volume
         )
         self.volume_slider.pack(anchor="e", pady=(4, 0))
+        
+        self.current_time_label = tk.Label(
+            self.song_frame,
+            textvariable=self.current_time_var,
+            bg="gray15",
+            fg="white"
+        )
+        self.current_time_label.place(relx= 0.8, rely = 0.8,anchor= "center")
+
+        self.total_time_label = tk.Label(
+            self.song_frame,
+            textvariable=self.total_time_var,
+            bg="gray15",
+            fg="white"
+        )
+        self.total_time_label.place(relx= 0.2, rely = 0.8,anchor= "center")
+        
+        
 
         self.sync_control_states()
 
@@ -126,6 +148,17 @@ class PlayerBar():
         
         if hasattr(self, "shuffle_btn2") and self.shuffle_btn2 is not None:
             self.shuffle_btn2.configure(image= icon)
+            
+        if self.loop_enabled:
+            icon = self.loop_on
+        else:
+            icon = self.loop_off
+        
+        if hasattr(self, "loop_btn") and self.loop_btn is not None:
+            self.loop_btn.configure(image=icon)
+        
+        if hasattr(self, "loop_btn2") and self.loop_btn2 is not None:
+            self.loop_btn2.configure(image= icon)
         
         
         volume_text = f"Volume {int(round(self.volume_value.get()))}%"
@@ -189,6 +222,7 @@ class PlayerBar():
             except tk.TclError:
                 pass
             self.progress_job = None
+            self.update_song_time(0)
 
         pygame.mixer.music.stop()
         self.play_song(self.current_path)
@@ -232,7 +266,11 @@ class PlayerBar():
             return
 
         if self.shuffle_enabled:
+            print(self.shuffle_enabled)
             next_index = self.get_shuffle_index(songs)
+        elif self.loop_enabled:
+            next_index = self.current_index
+            
         elif self.current_index >= 0 and  self.current_index < len(songs) - 1:
             next_index = self.current_index + 1
         else:
@@ -280,6 +318,7 @@ class PlayerBar():
         pygame.mixer.music.play()
 
         self.total_seconds = pygame.mixer.Sound(path).get_length()
+        self.update_song_time(0)
         self.playback_offset = 0
 
         self.progress_value.set(0)
@@ -313,6 +352,8 @@ class PlayerBar():
 
         current_seconds = max(pygame.mixer.music.get_pos() / 1000, 0)
         current_seconds += self.playback_offset
+        
+        self.update_song_time(current_seconds)
 
         if self.total_seconds > 0:
             percent = min((current_seconds / self.total_seconds) * 100, 100)
@@ -363,6 +404,7 @@ class PlayerBar():
         width = max(widget.winfo_width(), 1)
         click_x = min(max(event.x, 0), width)
         target_seconds = (click_x / width) * self.total_seconds
+        self.update_song_time(target_seconds)
 
         if self.progress_job is not None:
             try:
@@ -391,3 +433,15 @@ class PlayerBar():
         self.is_paused = False
         self.set_play_button_state(True)
         self.check_song_act()
+    
+    def format_time(self, seconds):
+        seconds = max(0, int(seconds))
+        minutes, seconds = divmod(seconds, 60)
+        return f"{minutes}:{seconds:02d}"
+
+    def update_song_time(self, current_seconds=0):
+        current_text = self.format_time(current_seconds)
+        total_text = self.format_time(self.total_seconds)
+
+        self.current_time_var.set(current_text)
+        self.total_time_var.set(total_text)
