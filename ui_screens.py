@@ -3,22 +3,25 @@ from tkinter import messagebox, ttk
 import tkinterdnd2 as tkdnd
 
 class Screens:
+    #crea la pantalla de inicio
     def create_home_screen(self):
 
         frame = tk.Frame(self.page_frame, bg=self.root_bg)
         self.create_song_slide_bar(frame)
-
-        self.load_info_tree()
+        
+        #frame para contenedor de canciones/scrollbar
 
         self.container_frame = tk.Frame(frame, bg=self.tree_bg, width=400, height=400)
         self.container_frame.pack(side=tk.LEFT, fill=tk.Y, pady=20, padx=20)
         self.container_frame.pack_propagate(False)
         
+        #contenedor de canvas/scrollbar
         self.list_container_frame = tk.Frame(self.container_frame, bg=self.tree_bg)
         self.list_container_frame.pack(fill=tk.BOTH, expand=True,padx=18, pady=(0, 18))
         
+        # canvas para canciones
         self.canvas = tk.Canvas(self.list_container_frame, bg= self.tree_bg, highlightthickness=0, bd=0)
-        
+        #scrollbar
         self.scrollbar = ttk.Scrollbar(
             self.list_container_frame,
             orient=tk.VERTICAL,
@@ -26,10 +29,11 @@ class Screens:
             style="Visible.Vertical.TScrollbar"
         )
         
+        #scroll frame dentro del canvas --- create_window
         self.scrollable_frame = tk.Frame(self.canvas, bg=self.tree_bg)
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         
-        self.canvas.configure(yscrollcommand= self.scrollbar.set)
+        self.canvas.configure(yscrollcommand= self.scrollbar.set) #actualizar cada q haya desplazamiento vertical
         
         self.canvas.pack(side = tk.LEFT, fill = tk.BOTH, expand = True)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -159,12 +163,14 @@ class Screens:
         self.show_songs()
         return frame
     
+    #crea la pantalla de playlists
     def create_playlist_screen(self):
         frame = tk.Frame(self.page_frame, bg=self.root_bg)
 
         self.playlist_setting(frame=frame)
         return frame
     
+    # carga los frames en la pantalla de playlists
     def playlist_setting (self,frame):
         if hasattr(self, "self.setting_f"):
             self.setting_f.destroy()
@@ -345,7 +351,8 @@ class Screens:
         self.save_playlist_btn.pack(side=tk.RIGHT)
 
         self.refresh_playlist_builder_lists()
-
+    
+    # texto de cancions seleccionada    
     def get_playlist_song_text(self, song):
         title = song.get("title", "Unknown")
         artist = song.get("artist", "Unknown")
@@ -358,14 +365,17 @@ class Screens:
         title = song.get("title", "Unknown").lower()
         album = song.get("album", "Unknown").lower()
         artist = song.get("artist", "Unknown").lower()
+        
         return query in title or query in album or query in artist
 
+    # actualiza con show songs las canciones segun la busqueda
     def refresh_home_song_list(self):
         if not hasattr(self, "scrollable_frame"):
             return
 
         self.show_songs()
-
+    
+    #actualiza la lista de las playlist segun la busqueda
     def refresh_playlist_builder_lists(self):
         if not hasattr(self, "available_songs_list"):
             return
@@ -375,6 +385,7 @@ class Screens:
         selected_query = self.selected_playlist_search_var.get().strip().lower()
 
         self.filtered_playlist_library_songs = []
+        
         for song in self.playlist_library_songs:
             if self.song_matches_query(song, available_query):
                 self.filtered_playlist_library_songs.append(song)
@@ -392,6 +403,7 @@ class Screens:
         for song in self.filtered_playlist_selected_songs:
             self.selected_playlist_list.insert(tk.END, self.get_playlist_song_text(song))
 
+    # actualiza segun los valores de la entrada
     def refresh_saved_playlists_list(self):
         if not hasattr(self, "saved_playlists_list"):
             return
@@ -406,7 +418,8 @@ class Screens:
 
         for playlist in self.filtered_saved_playlists:
             self.saved_playlists_list.insert(tk.END, playlist["name"])
-
+    
+    # actualiza el label de la playlist que esta siendo utilizada
     def update_current_source_label(self):
         if not hasattr(self, "current_source_label"):
             return
@@ -423,6 +436,7 @@ class Screens:
 
         self.current_source_label.configure(text=source_text)
 
+    # agrega la cancion seleccionada de la lista (funcion en boton)
     def add_selected_songs_to_playlist(self):
         if not hasattr(self, "available_songs_list"):
             return
@@ -439,6 +453,7 @@ class Screens:
 
         self.refresh_playlist_builder_lists()
 
+    # elimina la cancion seleccionada de la playlist creada (función en boton)
     def remove_selected_songs_from_playlist(self):
         if not hasattr(self, "selected_playlist_list"):
             return
@@ -455,6 +470,7 @@ class Screens:
 
         self.refresh_playlist_builder_lists()
 
+    #guarda la playlist y resetea
     def save_playlist_selection(self):
         playlist_name = self.name_entry.get().strip()
 
@@ -477,7 +493,8 @@ class Screens:
             text=f"Playlist '{playlist_name}' saved. Load it from the home screen."
         )
         messagebox.showinfo("Playlist", f"Playlist saved to {playlist_path}")
-
+        
+    #carga las canciones todas las descargadas 
     def load_original_library(self):
         self.active_playlist = None
         self.current_index = -1
@@ -487,6 +504,7 @@ class Screens:
         if hasattr(self, "playlist_status_label") and self.playlist_status_label is not None:
             self.playlist_status_label.configure(text="Original library loaded.")
 
+    #define la playlist para que se carguen las canciones en show_songs
     def load_selected_playlist(self):
         if not hasattr(self, "saved_playlists_list"):
             return
@@ -507,7 +525,7 @@ class Screens:
                 text=f"Playlist '{playlist['name']}' loaded."
             )
          
-         
+    #crea la pantalla load
     def create_load_screen(self):
     
         frame = tk.Frame(self.page_frame, bg=self.root_bg)
@@ -545,16 +563,18 @@ class Screens:
 
         return frame
     ##================================ SCROLL CON MOUSEWHEEL ==================================
+    #maneja cuantas unidades sube el scroll
     def _on_mousewheel(self, event):
         if event.num == 4:
-            self.canvas.yview_scroll(-1, "units")
+            self.canvas.yview_scroll(-1, "units") # arriba
         elif event.num == 5:
-            self.canvas.yview_scroll(1, "units")
+            self.canvas.yview_scroll(1, "units") #arriba
         else:
             self.canvas.yview_scroll(int(-event.delta / 120), "units")
    
    ##================================ MOSTRAR CANCIONES EN SCROLLABLE FRAME ===================
-        
+    #muestra las canciones dentro del canvas con scroll
+    #maneja el resultado de busqueda    
     def show_songs(self):
         self._cancel_song_render_jobs()
 
@@ -586,12 +606,11 @@ class Screens:
             cover_label.image = cover
             cover_label.pack(side=tk.LEFT, padx=5)
             
-            tk.Label(song_frame, text=title, fg="white", bg="#121212").pack(anchor="w")
-            tk.Label(song_frame, text=artist, fg="gray", bg="#121212").pack(anchor="w")
-            tk.Label(song_frame, text=album, fg="gray", bg="#121212").pack(anchor="w")
+            tk.Label(song_frame, text=title, fg="white", bg="black").pack(anchor="w")
+            tk.Label(song_frame, text=artist, fg="gray", bg="black").pack(anchor="w")
+            tk.Label(song_frame, text=album, fg="gray", bg="black").pack(anchor="w")
 
             song_frame.bind("<Button-1>", lambda e, f=song_frame, s=song: self.select_song(f, s))
-            
             
             for widget in song_frame.winfo_children():
                 widget.bind("<Button-1>", lambda e, f=song_frame, s=song: self.select_song(f, s))
@@ -600,7 +619,7 @@ class Screens:
             song_frame.bind("<Button-4>", self._on_mousewheel)
             song_frame.bind("<Button-5>", self._on_mousewheel)
 
-            delay = min(index * 45, 360)
+            delay = min(index * 45, 360) ##configurar delay por cancion
             job_id = self.root.after(
                 delay,
                 lambda f=song_frame: self._show_song_frame(f)
@@ -611,11 +630,13 @@ class Screens:
         self.scrollable_frame.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-    def _show_song_frame(self, song_frame):
+    #genera las imagenes del scfroll
+    def _show_song_frame(self, song_frame): 
         song_frame.pack(fill="x", padx=5, pady=5)
         self.scrollable_frame.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
+    #cancela "tareas (job_id)" al generar el canvas
     def _cancel_song_render_jobs(self):
         for job_id in self.song_render_jobs:
             try:
@@ -625,28 +646,23 @@ class Screens:
 
         self.song_render_jobs.clear()
 
+    #modifica como se ve el frame de la canción al ser seleccionada
     def set_song_frame_state(self, frame, active=False):
-        if frame is None:
-            return
-
-        try:
-            if not frame.winfo_exists():
-                return
-        except tk.TclError:
+        if frame is None or not frame.winfo_exists():
             return
 
         bg_color = "gray30" if active else self.tree_bg
-        try:
-            frame.configure(bg=bg_color)
-        except tk.TclError:
-            return
+
+        frame.configure(bg=bg_color)
 
         for widget in frame.winfo_children():
-            try:
-                widget.configure(bg=bg_color)
-            except tk.TclError:
-                continue
+            if widget.winfo_exists():
+                try:
+                    widget.configure(bg=bg_color)
+                except tk.TclError:
+                    continue
 
+    #encuentra el index de una canción seleccionada para usarlo después
     def find_song_index(self, song, songs=None):
         if song is None:
             return -1
@@ -661,6 +677,7 @@ class Screens:
 
         return -1
 
+    #actualiza el label de cancion seleccionada
     def update_selected_song_display(self, song=None):
         if self.selected_song_label is not None:
             if song is None:
@@ -676,6 +693,7 @@ class Screens:
             self.canvas_selected_song.delete("all")
             self.canvas_selected_song.create_image(200, 200, image=self.selected_song_cover)
 
+    #limpia todo si ya no existe la canción seleccionada
     def sync_selected_song_state(self):
         songs = self.get_current_song()
         selected_index = self.find_song_index(self.selected_song, songs)
@@ -698,6 +716,7 @@ class Screens:
     
     ##================================ SELECCIONAR CANCION ==================================
     
+    # conseguir index y path de la canción seleccionada para actualizar los labels
     def select_song(self, frame, song):
         if self.selected_song_frame is not None:
             self.set_song_frame_state(self.selected_song_frame, active=False)
@@ -719,7 +738,9 @@ class Screens:
         self.play_song(path)
         
         return self.selected_song
-
+    
+    
+    #crea la interfaz del frame derecho
     def create_song_slide_bar(self, frame):
         
         self.frame_home = tk.Frame(frame, bg = "gray20", width=450)

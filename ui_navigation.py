@@ -1,6 +1,7 @@
 import tkinter as tk
 
 class Navigation:
+    #crea la barra de menu
     def create_sidebar(self):
         self.menu_frame_bar = tk.Frame(self.root, bg = self.menu_bg, width=100)
         self.menu_frame_bar.pack(side = tk.LEFT, fill = tk.Y , pady= 10, padx= 10)
@@ -20,7 +21,7 @@ class Navigation:
         self.toggle_add = self.create_buttons(img = self.add_icon,
                                               cmd = lambda: self.switch_pages("load", self.add_indicator),
                                               y= 500)
-
+    #crea los botones
     def create_buttons(self, img,cmd,y):
         btn = tk.Button(self.menu_frame_bar,
                         image= img,
@@ -32,13 +33,13 @@ class Navigation:
         btn.place(x= 15, y= y)
         return btn
     #=============================== INDICADORES DE SELECCION EN EL MENU ==================================
-    
+    #crea los indicadores
     def create_indicators(self, y):
         ind = tk.Label(self.menu_frame_bar, bg = self.menu_bg)
         ind.place(x=5, y=y, width=7, height=70)
         
         return ind
-        
+    #modifica el estado de los indicadores
     def switch_indicator(self,indicator, page):
         
         self.home_indicator.configure(bg = self.menu_bg)
@@ -47,14 +48,13 @@ class Navigation:
         
         indicator.configure(bg = "black")
         
-        if self.menu_frame_bar.winfo_width() > 100:
-            self.toggle_menu_close()
             
         for frame in self.page_frame.winfo_children():
             frame.destroy()
         
         page()
-        
+    
+    #resetea los indicatores 
     def reset_indicators(self):
         for indicator in [self.home_indicator, self.playlist_indicator, self.add_indicator]:
             indicator.configure(bg = self.menu_bg)
@@ -62,6 +62,7 @@ class Navigation:
     
     ##================================ SWITCH PAGES Y MOSTRAR PAGINA SELECCIONADA ================================
     
+    #cambia a la pagina seleccionada
     def switch_pages(self, page, indicator):
         self.reset_indicators()
         indicator.configure(bg = "black")
@@ -70,7 +71,7 @@ class Navigation:
             self.toggle_menu_close()
 
         self.show_page(page)
-    
+    #muestra las paginas y oculta los widgets no necesarios
     def show_page(self, page):
         for w in self.page_frame.winfo_children():
             w.pack_forget()

@@ -7,11 +7,13 @@ import shutil
 from PIL import Image, ImageTk
 
 class Data:
+    #carga la carpeta de la playlist
     def get_playlist_folder(self):
         playlist_folder = "playlists"
         os.makedirs(playlist_folder, exist_ok=True)
         return playlist_folder
 
+    #guarda la informacion ingresada al generar la playlisy y la guarda
     def save_playlist_data(self, playlist_name, songs):
         safe_name = "".join(char for char in playlist_name.strip() if char.isalnum() or char in (" ", "-", "_")).strip()
         if not safe_name:
@@ -28,6 +30,7 @@ class Data:
 
         return playlist_path
 
+    #carga la lista de las playlist
     def list_saved_playlists(self):
         playlists = []
 
@@ -50,6 +53,7 @@ class Data:
 
         return playlists
 
+    #carga la lista de canciones cargadas o de una playlist
     def get_current_song(self):
         if self.active_playlist is None:
             songs = self.load_songs()["songs"]
@@ -59,6 +63,7 @@ class Data:
                 data = json.load(f)
                 return data["songs"]
 
+    #carga el archivo mp3 desde explorador de archivos
     def load_file(self):
         file_path = filedialog.askopenfilename(
         filetypes=[("Audio Files", "*.mp3 *.wav")]
@@ -67,6 +72,7 @@ class Data:
         if file_path:
             self.add_song(file_path)
     
+    #maneja el drag and drop
     def handle_drop(self, event):
         # event.data = la ruta del archivo arrastrado 
         # splitlist() convierte el formato para q sea legible 
@@ -81,13 +87,8 @@ class Data:
             else:
                 print(f"Formato no soportado: {normalized_path}")
     
-    def load_info_tree(self):
-        try:
-            with open("titulos.json", "r") as file:
-                self.datos = json.load(file)
-        except FileNotFoundError:
-            self.datos = {"songs": []}
-            
+    
+    # agrega la cancion al json con formato
     def add_song(self,file_path):
         
         music_folder = "music"

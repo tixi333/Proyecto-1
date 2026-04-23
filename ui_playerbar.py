@@ -5,6 +5,8 @@ from tkinter import ttk
 
 
 class PlayerBar():
+    
+    #crea la barra horizontal
     def create_song_bar(self):
         self.song_frame = tk.Frame(self.root, bg="gray15", height=100)
 
@@ -109,7 +111,8 @@ class PlayerBar():
         
 
         self.sync_control_states()
-
+        
+    #crear botones
     def create_mode_button(self, parent, img, command):
         return tk.Button(
             parent,
@@ -122,7 +125,8 @@ class PlayerBar():
             padx=10,
             pady=6,
         )
-
+    
+    #modifica el icono segun el estado de play
     def set_play_button_state(self, is_playing):
         if is_playing:
             icon = self.pause_icon
@@ -135,6 +139,7 @@ class PlayerBar():
         if hasattr(self, "play_btn2") and self.play_btn2 is not None:
             self.play_btn2.configure(image=icon)
 
+    #modifica el icono segun el estado y sincroniza los dos botones y el volumen
     def sync_control_states(self):
         print(self.shuffle_enabled)
 
@@ -167,12 +172,14 @@ class PlayerBar():
             if label is not None:
                 label.configure(text=volume_text)
 
+    #cambiar volumen
     def change_volume(self, value):
         volume = float(value)
         self.volume_value.set(volume)
         pygame.mixer.music.set_volume(volume / 100)
         self.sync_control_states()
 
+    #interaccion con shuffle
     def toggle_shuffle(self):
 
         self.current_mode = self.check_mode()
@@ -189,6 +196,7 @@ class PlayerBar():
 
             self.sync_control_states()
 
+    #interaccion con loop
     def toggle_loop(self):
 
         self.current_mode = self.check_mode()
@@ -202,7 +210,8 @@ class PlayerBar():
                 self.current_mode = "loop"
 
             self.sync_control_states()
-        
+    
+    #verifica el modo de reproduccion cada cierto tiempo
     def check_mode(self):
         
         self.root.after(500, self.check_mode)
@@ -214,7 +223,7 @@ class PlayerBar():
         else:
             return "loop"
         
-
+    #para la cancion y la reinicia
     def stop_song(self):
         if self.progress_job is not None:
             try:
@@ -231,7 +240,8 @@ class PlayerBar():
         self.is_playing = True
         self.is_paused = False
         self.set_play_button_state(True)
-        
+    
+    # obtiene el index random
     def get_shuffle_index(self, songs):
         if not songs:
             return -1
@@ -251,14 +261,16 @@ class PlayerBar():
         e = random.choice(candidates)
         return e
 
+    #muestra la barra (depende la pagina)
     def show_song_bar(self):
         if self.song_frame.winfo_manager() == "":
             self.song_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=10, padx=10)
-
+    #oculta la barra (depende la pagina)
     def hide_song_bar(self):
         if self.song_frame.winfo_manager() == "pack":
             self.song_frame.pack_forget()
 
+    #cambia de canción con el index
     def next_song(self):
         songs = self.get_current_song()
 
@@ -278,11 +290,12 @@ class PlayerBar():
 
         if next_index != -1:
             self.play_song_by_index(next_index)
-
+    #cambia de canción con el index
     def previous_song(self):
         if self.current_index > 0:
             self.play_song_by_index(self.current_index - 1)
 
+    #carga las canciones y define el index de la canción actual
     def play_song_by_index(self, index):
         songs = self.get_current_song()
 
@@ -304,6 +317,7 @@ class PlayerBar():
             self.update_selected_song_display(song)
             self.play_song(path)
 
+    #reproduce la canción y chequea la "tarea"
     def play_song(self, path):
         if self.progress_job is not None:
             try:
@@ -327,6 +341,7 @@ class PlayerBar():
         self.set_play_button_state(True)
         self.check_song_act()
 
+    #chequea la actividad de la cancion cada cierto tiempo y actualiza el tiempo de reproduccion 
     def check_song_act(self):
         self.progress_job = None
 
@@ -361,6 +376,7 @@ class PlayerBar():
 
         self.progress_job = self.root.after(500, self.check_song_act)
 
+    #chequea el estado de la reproduccion
     def music_activity(self):
         if self.current_path is None:
             return
@@ -396,6 +412,7 @@ class PlayerBar():
             self.set_play_button_state(True)
             self.check_song_act()
 
+    #maneja la interaccion con la barra
     def seek_song(self, event):
         if self.current_path is None or self.total_seconds <= 0:
             return
@@ -434,11 +451,12 @@ class PlayerBar():
         self.set_play_button_state(True)
         self.check_song_act()
     
+    #transforma el formato 
     def format_time(self, seconds):
         seconds = max(0, int(seconds))
         minutes, seconds = divmod(seconds, 60)
         return f"{minutes}:{seconds:02d}"
-
+    #actualiza el tiempo en progreso
     def update_song_time(self, current_seconds=0):
         current_text = self.format_time(current_seconds)
         total_text = self.format_time(self.total_seconds)
